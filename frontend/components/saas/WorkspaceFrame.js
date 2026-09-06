@@ -20,6 +20,8 @@ const links = [
   ['Team', 'team'],
   ['AI Assistant', 'ai'],
   ['Integrations', 'integrations'],
+  ['Notifications', 'notifications'],
+  ['Billing', 'billing'],
   ['Settings', 'settings'],
 ];
 
