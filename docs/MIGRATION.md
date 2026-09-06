@@ -14,10 +14,29 @@ The existing Mongo installation becomes one explicit organization, for example
 | `Meeting` | organization meeting + attendees; SMTP status is historical delivery metadata |
 | `Invitation` | migration report only unless a controlled re-invitation is required |
 
-## Script requirements
+## Migration tooling
 
-Create `scripts/migrate-nidar-to-saas.*` only in a later implementation phase.
-It must support:
+`backend/scripts/migrate-nidar-to-saas.js` now provides a deterministic,
+idempotent migration plan and guarded apply path. It maps legacy teams to
+projects, members to local Clerk-migration profiles and organization
+memberships, tasks to normalized tasks, meetings to timezone-aware meeting
+records, and plans to project activity events (the target schema has no
+standalone plan entity).
+
+The command is dry-run by default and emits a JSON mapping report:
+
+```bash
+SAAS_ORGANIZATION_ID=<target-local-organization-id> \
+MONGODB_URI=<legacy-source-uri> \
+npm run migrate:saas --prefix backend -- --report /tmp/nidar-migration.json
+```
+
+Applying requires an explicit `--apply`, `DATABASE_URL`, and
+`ALLOW_SAAS_MIGRATION=1`. Never run it against production without a reviewed
+backup, mapping report, and rehearsal. Existing legacy password hashes are not
+copied into Clerk; users require secure reactivation/re-invitation.
+
+The planner and safety flags are covered by backend unit tests. It supports:
 
 - `--dry-run` with no writes;
 - deterministic source-to-target mapping and a JSON/CSV report;

@@ -11,6 +11,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "NODE_ENV=test node --test tests/*.test.js",
+    "migrate:saas": "node scripts/migrate-nidar-to-saas.js",
     "create-admin": "node scripts/create-admin.js"
   },
   "dependencies": {
