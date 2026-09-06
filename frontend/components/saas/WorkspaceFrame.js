@@ -1,43 +1,92 @@
 import Link from 'next/link';
 import { OrganizationSwitcher } from '@clerk/nextjs';
 import { useAuth } from '@clerk/nextjs';
-import { Bell, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Bell, Menu, Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
 import { ApiError, saasApi } from '../../lib/api';
 
 const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk'
   && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
-const links = [
+const primaryLinks = [
   ['Home', ''],
   ['My Work', 'my-work'],
+  ['Inbox', 'notifications'],
   ['Projects', 'projects'],
-  ['Tasks', 'tasks'],
   ['Calendar', 'calendar'],
+  ['AI Assistant', 'ai'],
+];
+
+const workLinks = [
+  ['Tasks', 'tasks'],
   ['Meetings', 'meetings'],
   ['Team', 'team'],
-  ['AI Assistant', 'ai'],
+];
+
+const settingsLinks = [
   ['Integrations', 'integrations'],
-  ['Notifications', 'notifications'],
   ['Billing', 'billing'],
   ['Settings', 'settings'],
 ];
 
 export function WorkspaceFrame({ orgSlug, children, active }) {
-  return <main className="min-h-screen bg-background p-4 text-foreground md:p-8">
-    <div className="mx-auto max-w-7xl space-y-6">
-      <header className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-center md:justify-between">
-        <div><p className="eyebrow">WORKSPACE</p><h1 className="text-3xl font-semibold">{orgSlug}</h1></div>
-        {clerkEnabled && <div className="flex items-center gap-2"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter /><OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/onboarding" /></div>}
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const wasOpen = useRef(false);
+  const current = active || 'Home';
+
+  useEffect(() => {
+    if (wasOpen.current && !mobileOpen) document.getElementById('workspace-navigation-trigger')?.focus();
+    wasOpen.current = mobileOpen;
+  }, [mobileOpen]);
+
+  const closeMobile = () => setMobileOpen(false);
+
+  return <div className="workspace-shell">
+    <aside className="workspace-sidebar" aria-label="Workspace navigation">
+      <WorkspaceBrand orgSlug={orgSlug} />
+      <WorkspaceNavigation orgSlug={orgSlug} active={current} />
+      <div className="workspace-sidebar-footer"><span className="muted">Team workspace</span></div>
+    </aside>
+    <div className="workspace-main">
+      <header className="workspace-topbar">
+        <div className="workspace-topbar-context">
+          <Button id="workspace-navigation-trigger" type="button" className="workspace-mobile-trigger" variant="outline" size="icon" aria-label="Open workspace navigation" onClick={() => setMobileOpen(true)}><Menu aria-hidden="true" /></Button>
+          <div><p className="eyebrow">WORKSPACE</p><h1>{orgSlug || 'Workspace'}</h1></div>
+        </div>
+        {clerkEnabled && <div className="workspace-topbar-actions"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter /><OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/onboarding" /></div>}
       </header>
-      <nav aria-label="Workspace navigation" className="flex flex-wrap gap-2">
-        {links.map(([label, path]) => <Button key={label} asChild variant={active === label ? 'secondary' : 'outline'} size="sm"><Link href={`/app/${orgSlug}${path ? `/${path}` : ''}`}>{label}</Link></Button>)}
-      </nav>
-      {children}
+      <main className="workspace-content">{children}</main>
     </div>
-  </main>;
+    <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+      <SheetContent side="left" className="workspace-mobile-sheet">
+        <SheetHeader><SheetTitle>{orgSlug || 'Workspace'}</SheetTitle><SheetDescription>Workspace navigation</SheetDescription></SheetHeader>
+        <WorkspaceNavigation orgSlug={orgSlug} active={current} onNavigate={closeMobile} />
+        {clerkEnabled && <div className="workspace-mobile-switcher"><OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/onboarding" /></div>}
+      </SheetContent>
+    </Sheet>
+  </div>;
+}
+
+function WorkspaceBrand({ orgSlug }) {
+  return <div className="workspace-brand"><span className="workspace-brand-mark" aria-hidden="true">A</span><div><p className="eyebrow">ASTRA WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div></div>;
+}
+
+function WorkspaceNavigation({ orgSlug, active, onNavigate }) {
+  const renderLinks = (items) => items.map(([label, path]) => {
+    const selected = active === label || (label === 'Inbox' && active === 'Notifications');
+    return <Link key={label} href={`/app/${orgSlug}${path ? `/${path}` : ''}`} className="workspace-nav-link" aria-label={label} aria-current={selected ? 'page' : undefined} onClick={onNavigate}>
+      <span>{label}</span>
+    </Link>;
+  });
+
+  return <nav className="workspace-navigation" aria-label="Workspace navigation">
+    <div className="workspace-nav-group">{renderLinks(primaryLinks)}</div>
+    <div className="workspace-nav-section"><p>WORK</p>{renderLinks(workLinks)}</div>
+    <div className="workspace-nav-section"><p>SETTINGS</p>{renderLinks(settingsLinks)}</div>
+  </nav>;
 }
 
 function NotificationCenter() {
@@ -68,7 +117,7 @@ function WorkspaceSearch({ orgSlug }) {
     return () => { active = false; clearTimeout(timer); };
   }, [getToken, query]);
   const all = results ? [...(results.projects || []).map((item) => ({ ...item, type: 'Project' })), ...(results.tasks || []).map((item) => ({ ...item, type: 'Task' })), ...(results.meetings || []).map((item) => ({ ...item, type: 'Meeting' }))].slice(0, 8) : [];
-  return <div className="relative hidden w-52 lg:block"><label htmlFor="workspace-search" className="sr-only">Search workspace</label><div className="flex items-center gap-2 rounded-md border border-input bg-background px-2"><Search aria-hidden="true" className="h-4 w-4 text-muted-foreground" /><input id="workspace-search" className="h-8 min-h-0 border-0 bg-transparent px-0 text-sm outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search…" /></div>{results && <div className="absolute right-0 top-10 z-20 w-72 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg">{all.length ? all.map((item) => <Link key={`${item.type}-${item.id}`} href={`/app/${orgSlug}/${item.type === 'Project' ? `projects/${item.id}` : item.type === 'Task' ? `tasks?task=${item.id}` : `meetings?meeting=${item.id}`}`} className="block rounded px-2 py-1.5 text-sm hover:bg-muted"><span className="mr-2 text-xs text-muted-foreground">{item.type}</span>{item.name || item.title}</Link>) : <p className="p-2 text-sm text-muted-foreground">No matches.</p>}</div>}</div>;
+  return <div className="workspace-search relative hidden w-52 lg:block"><label htmlFor="workspace-search" className="sr-only">Search workspace</label><div className="flex items-center gap-2 rounded-md border border-input bg-background px-2"><Search aria-hidden="true" className="h-4 w-4 text-muted-foreground" /><input id="workspace-search" className="h-8 min-h-0 border-0 bg-transparent px-0 text-sm outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search…" /></div>{results && <div className="absolute right-0 top-10 z-20 w-72 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg">{all.length ? all.map((item) => <Link key={`${item.type}-${item.id}`} href={`/app/${orgSlug}/${item.type === 'Project' ? `projects/${item.id}` : item.type === 'Task' ? `tasks?task=${item.id}` : `meetings?meeting=${item.id}`}`} className="block rounded px-2 py-1.5 text-sm hover:bg-muted"><span className="mr-2 text-xs text-muted-foreground">{item.type}</span>{item.name || item.title}</Link>) : <p className="p-2 text-sm text-muted-foreground">No matches.</p>}</div>}</div>;
 }
 
 export function FeatureDisabled({ orgSlug }) {
