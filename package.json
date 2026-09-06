@@ -5,8 +5,9 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "npm run test:domain",
+    "test": "npm run test:domain && npm run test:database",
     "test:domain": "tsx --test packages/domain/src/*.test.ts",
+    "test:database": "tsx --test packages/database/src/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

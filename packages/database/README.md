@@ -17,3 +17,6 @@ Database commands require an explicit `DATABASE_URL`; the checked-in Prisma
 config uses a localhost placeholder only so validation remains offline. Apply
 the committed migration with `npm run migrate:deploy --workspace
 @nidar/database` after configuring a development database.
+
+`src/client.ts` is the server-only Prisma/`pg` adapter. It does not run in the
+browser or mobile clients and deliberately requires `DATABASE_URL` at runtime.
