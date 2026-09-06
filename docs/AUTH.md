@@ -39,3 +39,13 @@ During the controlled transition:
 
 `CLERK_SECRET_KEY` and webhook signing secrets are server-only. Public keys and
 publishable configuration may be exposed only where Clerk requires them.
+
+## Phase 1 implementation note
+
+`backend/utils/clerk.js` now provides the server-only adapter and explicit
+organization context mapping. The Express app mounts Clerk middleware only when
+`AUTH_PROVIDER=clerk` and `CLERK_SECRET_KEY` are both present; otherwise the
+legacy routes remain available for local compatibility. The installed package
+is `@clerk/express@2.1.66`, the current compatible release verified against the
+repository's Express 4 and Node 20+ baseline. This is a transition boundary,
+not a second permanent identity authority.
