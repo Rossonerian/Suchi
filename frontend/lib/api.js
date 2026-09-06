@@ -74,6 +74,8 @@ export const api = {
 };
 
 export const saasApi = {
+  listOrganizations: (accessToken) => request('/v1/organizations', {}, accessToken),
+  createOrganization: (payload, accessToken) => request('/v1/organizations', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
   listProjects: (accessToken) => request('/v1/projects', {}, accessToken),
   getProject: (id, accessToken) => request(`/v1/projects/${encodeURIComponent(id)}`, {}, accessToken),
   createProject: (payload, accessToken) => request('/v1/projects', { method: 'POST', body: JSON.stringify(payload) }, accessToken),

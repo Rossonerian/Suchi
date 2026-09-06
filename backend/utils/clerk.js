@@ -16,8 +16,8 @@ function organizationRoleFromClerkRole(role) {
 }
 
 function organizationContextFromClerkAuth(auth) {
-  const userId = typeof auth?.userId === 'string' ? auth.userId : '';
-  if (!userId) throw new AppError('Authentication required.', 401, 'UNAUTHENTICATED');
+  const userContext = userContextFromClerkAuth(auth);
+  const userId = userContext.userId;
 
   const organizationId = typeof auth.orgId === 'string' ? auth.orgId : '';
   if (!organizationId) {
@@ -29,6 +29,12 @@ function organizationContextFromClerkAuth(auth) {
     organizationId,
     organizationRole: organizationRoleFromClerkRole(auth.orgRole),
   };
+}
+
+function userContextFromClerkAuth(auth) {
+  const userId = typeof auth?.userId === 'string' ? auth.userId : '';
+  if (!userId) throw new AppError('Authentication required.', 401, 'UNAUTHENTICATED');
+  return { userId };
 }
 
 function clerkMiddlewareIfConfigured() {
@@ -49,10 +55,26 @@ function requireClerkOrganization(req, res, next) {
   }
 }
 
+function requireClerkUser(req, res, next) {
+  try {
+    if (!isClerkConfigured()) {
+      throw new AppError('Clerk authentication is not configured.', 503, 'AUTH_PROVIDER_UNAVAILABLE');
+    }
+    const auth = getAuth(req);
+    req.clerkAuth = auth;
+    req.userContext = userContextFromClerkAuth(auth);
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   isClerkConfigured,
   organizationRoleFromClerkRole,
   organizationContextFromClerkAuth,
+  userContextFromClerkAuth,
   clerkMiddlewareIfConfigured,
   requireClerkOrganization,
+  requireClerkUser,
 };
