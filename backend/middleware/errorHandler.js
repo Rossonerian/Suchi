@@ -12,7 +12,10 @@ function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-va
   if (err instanceof SyntaxError && 'body' in err) {
     return res.status(400).json({ error: 'Request body must be valid JSON.', code: 'VALIDATION_ERROR' });
   }
-  if (err.status && err.status < 500) {
+  // Known operational errors (including a deliberately unavailable optional
+  // provider during migration) still use the stable API shape. Internal
+  // errors retain the generic response below.
+  if (err.status && err.status >= 400 && err.status < 600 && err.code && err.code !== 'INTERNAL_ERROR') {
     const body = { error: err.message, code: err.code || 'REQUEST_ERROR' };
     if (err.details) body.details = err.details;
     return res.status(err.status).json(body);

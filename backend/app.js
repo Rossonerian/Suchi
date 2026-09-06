@@ -13,6 +13,7 @@ const adminRouter = require('./routes/admin');
 const { MISSION_DEADLINE } = require('./constants/mission');
 const { requireAuth, requireSameOrigin } = require('./utils/auth');
 const { clerkMiddlewareIfConfigured } = require('./utils/clerk');
+const saasRouter = require('./routes/saas');
 const { rateLimitHandler } = require('./utils/rateLimit');
 
 const app = express();
@@ -48,6 +49,7 @@ app.use('/api', requireSameOrigin(allowedOrigins));
 // existing routes remain on the compatibility session until their resources
 // are migrated, so local NIDAR pages keep working during the transition.
 app.use('/api/v1', clerkMiddlewareIfConfigured());
+app.use('/api/v1', saasRouter);
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.get('/api/mission', (req, res) => res.json({ deadline: MISSION_DEADLINE }));
 app.use('/api/auth', authRouter);

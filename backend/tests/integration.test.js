@@ -93,6 +93,15 @@ test('health and security headers are available without a database session', asy
   assert.ok(response.headers.get('content-security-policy') || response.headers.get('strict-transport-security'));
 });
 
+test('SaaS project API stays unavailable until Clerk is explicitly configured', async () => {
+  const response = await request('/api/v1/projects');
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    error: 'Clerk authentication is not configured.',
+    code: 'AUTH_PROVIDER_UNAVAILABLE',
+  });
+});
+
 test('password login is generic and never serializes password hashes', async () => {
   const valid = await request('/api/auth/login', { method: 'POST', body: json({ email: alice.email, password }) });
   assert.equal(valid.status, 200);
