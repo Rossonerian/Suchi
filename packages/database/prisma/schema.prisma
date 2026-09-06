@@ -479,6 +479,8 @@ model AiRun {
   capability     String
   model          String
   status         String
+  confirmationNonce String?      @unique
+  confirmedAt    DateTime?
   latencyMs      Int?
   createdAt      DateTime       @default(now())
   conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

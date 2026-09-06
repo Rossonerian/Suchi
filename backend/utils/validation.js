@@ -72,7 +72,16 @@ function parseEmail(value) {
   return email;
 }
 
+function parseSchema(schema, value, message = 'Request input is invalid.') {
+  try {
+    return schema.parse(value);
+  } catch (error) {
+    if (error?.name !== 'ZodError') throw error;
+    throw new AppError(message, 400, 'VALIDATION_ERROR', { issues: error.issues || [] });
+  }
+}
+
 module.exports = {
   AppError, ValidationError, requiredString, optionalString, parseObjectId,
-  optionalObjectId, normalizeHttpUrl, parseDate, parseFutureDate, parseEmail,
+  optionalObjectId, normalizeHttpUrl, parseDate, parseFutureDate, parseEmail, parseSchema,
 };

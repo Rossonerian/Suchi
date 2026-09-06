@@ -1,5 +1,5 @@
 const { z } = require('zod');
-const { AppError } = require('../utils/validation');
+const { AppError, parseSchema } = require('../utils/validation');
 
 const createProjectInput = z.object({
   name: z.string().trim().min(1).max(160),
@@ -37,7 +37,7 @@ async function getProject(db, context, projectId) {
 
 async function createProject(db, context, input) {
   const { user, membership } = await resolveMembership(db, context);
-  const parsed = createProjectInput.parse(input);
+  const parsed = parseSchema(createProjectInput, input, 'Project input is invalid.');
   if (parsed.teamId) {
     const team = await db.team.findFirst({ where: { id: parsed.teamId, organizationId: context.organizationId } });
     if (!team) throw new AppError('Team not found in this organization.', 404, 'TEAM_NOT_FOUND');

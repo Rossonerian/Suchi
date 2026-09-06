@@ -1,5 +1,5 @@
 const { z } = require('zod');
-const { AppError } = require('../utils/validation');
+const { AppError, parseSchema } = require('../utils/validation');
 const { resolveMembership } = require('./projects');
 
 const taskStatus = z.enum(['backlog', 'todo', 'in_progress', 'blocked', 'review', 'done', 'cancelled']);
@@ -37,8 +37,8 @@ async function listTasks(db, context, filters = {}) {
   await resolveMembership(db, context);
   const where = { organizationId: context.organizationId };
   if (filters.projectId) where.projectId = filters.projectId;
-  if (filters.status) where.status = taskStatus.parse(filters.status);
-  if (filters.priority) where.priority = taskPriority.parse(filters.priority);
+  if (filters.status) where.status = parseSchema(taskStatus, filters.status, 'Task status filter is invalid.');
+  if (filters.priority) where.priority = parseSchema(taskPriority, filters.priority, 'Task priority filter is invalid.');
   if (filters.assigneeMembershipId) {
     where.assignees = { some: { membershipId: filters.assigneeMembershipId } };
   }
@@ -52,7 +52,7 @@ async function getTask(db, context, taskId) {
 
 async function createTask(db, context, input) {
   const { user } = await resolveMembership(db, context);
-  const parsed = createTaskInput.parse(input);
+  const parsed = parseSchema(createTaskInput, input, 'Task input is invalid.');
   const project = await db.project.findFirst({ where: { id: parsed.projectId, organizationId: context.organizationId } });
   if (!project) throw new AppError('Project not found in this organization.', 404, 'PROJECT_NOT_FOUND');
   const assignees = await resolveAssignees(db, context.organizationId, parsed.assigneeIds);
@@ -82,7 +82,7 @@ async function updateTask(db, context, taskId, input) {
   await resolveMembership(db, context);
   const existing = await db.task.findFirst({ where: { id: taskId, organizationId: context.organizationId } });
   if (!existing) throw taskNotFound();
-  const parsed = updateTaskInput.parse(input);
+  const parsed = parseSchema(updateTaskInput, input, 'Task input is invalid.');
   const { assigneeIds, ...data } = parsed;
   const assignees = assigneeIds === undefined ? null : await resolveAssignees(db, context.organizationId, assigneeIds);
   return db.$transaction(async (tx) => {

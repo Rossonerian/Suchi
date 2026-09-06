@@ -1,5 +1,5 @@
 const { z } = require('zod');
-const { AppError } = require('../utils/validation');
+const { AppError, parseSchema } = require('../utils/validation');
 
 const organizationInput = z.object({
   name: z.string().trim().min(1).max(120),
@@ -20,7 +20,7 @@ async function listOrganizations(db, userContext) {
 
 async function provisionOrganization(db, identityProvider, userContext, input) {
   if (!userContext?.userId) throw new AppError('Authentication required.', 401, 'UNAUTHENTICATED');
-  const parsed = organizationInput.parse(input);
+  const parsed = parseSchema(organizationInput, input, 'Organization input is invalid.');
   const profile = identityProvider.getUser ? await identityProvider.getUser(userContext.userId) : null;
   const displayName = profile?.displayName || [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || userContext.userId;
   const email = profile?.email || null;
