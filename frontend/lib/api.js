@@ -96,6 +96,14 @@ export const saasApi = {
   cancelMeeting: (id, accessToken) => request(`/v1/meetings/${encodeURIComponent(id)}/cancel`, { method: 'POST' }, accessToken),
   askAi: (payload, accessToken) => request('/v1/ai/ask', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
   confirmAiWrite: (token, accessToken) => request('/v1/ai/confirm', { method: 'POST', body: JSON.stringify({ token }) }, accessToken),
+  listNotifications: (query = {}, accessToken) => {
+    const params = new URLSearchParams(Object.entries(query).filter(([, value]) => value !== undefined && value !== '')).toString();
+    return request(`/v1/notifications${params ? `?${params}` : ''}`, {}, accessToken);
+  },
+  markNotificationRead: (id, accessToken) => request(`/v1/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' }, accessToken),
+  searchWorkspace: (query, accessToken) => request(`/v1/search?q=${encodeURIComponent(query)}`, {}, accessToken),
+  listComments: (taskId, accessToken) => request(`/v1/tasks/${encodeURIComponent(taskId)}/comments`, {}, accessToken),
+  createComment: (taskId, body, accessToken) => request(`/v1/tasks/${encodeURIComponent(taskId)}/comments`, { method: 'POST', body: JSON.stringify({ body }) }, accessToken),
   startGoogleCalendar: (accessToken) => request('/v1/integrations/google/calendar/start', {}, accessToken),
   googleCalendarStatus: (accessToken) => request('/v1/integrations/google/calendar/status', {}, accessToken),
 };
