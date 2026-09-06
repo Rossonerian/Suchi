@@ -11,13 +11,13 @@ export class ApiError extends Error {
   }
 }
 
-async function request(path, options = {}) {
+async function request(path, options = {}, accessToken = '') {
   let res;
   try {
     const { headers = {}, ...requestOptions } = options;
     res = await fetch(`${API_URL}/api${path}`, {
       ...requestOptions,
-      headers: { 'Content-Type': 'application/json', ...headers },
+      headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}), ...headers },
       credentials: 'include',
     });
   } catch {
@@ -71,4 +71,10 @@ export const api = {
   resetMemberAccess: (id, payload = {}) => request(`/admin/members/${encodeURIComponent(id)}/reset-access`, { method: 'POST', body: JSON.stringify(payload) }),
   updateMember: (id, payload) => request(`/admin/members/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   revokeMemberSessions: (id) => request(`/admin/members/${encodeURIComponent(id)}/revoke-sessions`, { method: 'POST' }),
+};
+
+export const saasApi = {
+  listProjects: (accessToken) => request('/v1/projects', {}, accessToken),
+  getProject: (id, accessToken) => request(`/v1/projects/${encodeURIComponent(id)}`, {}, accessToken),
+  createProject: (payload, accessToken) => request('/v1/projects', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
 };

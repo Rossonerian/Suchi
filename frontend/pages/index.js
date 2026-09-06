@@ -7,6 +7,10 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { SignInButton } from '@clerk/nextjs';
+
+const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk'
+  && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
 export default function SignIn() {
   const router = useRouter();
@@ -44,6 +48,13 @@ export default function SignIn() {
           <CardDescription className="lede">NIDAR 2026–27 · Track 1 mission dashboard</CardDescription>
         </CardHeader>
         <CardContent className="px-0 pb-0">
+        {clerkEnabled && <div className="stack-form">
+          <SignInButton mode="modal" forceRedirectUrl="/onboarding">
+            <Button className="min-h-11" size="lg" type="button">Continue with Google</Button>
+          </SignInButton>
+          <p className="form-hint">Use your workspace identity to continue.</p>
+        </div>}
+        {!clerkEnabled && <>
           <form className="stack-form" onSubmit={handleSubmit} noValidate>
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" autoCapitalize="none" autoFocus required />
@@ -53,9 +64,10 @@ export default function SignIn() {
             <Button type="button" className="password-toggle" variant="ghost" size="icon" onClick={() => setShowPassword((visible) => !visible)} aria-pressed={showPassword} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff /> : <Eye />}</Button>
           </div>
           <Button className="mt-2 min-h-11" size="lg" disabled={loading || !email.trim() || !password}>{loading ? 'Signing in…' : <><LogIn />Sign in</>}</Button>
-        </form>
-        <p className="form-message" role="alert" aria-live="polite">{error}</p>
-        <p className="form-hint invite-help">Have an invitation? <Link href="/claim-invite">Claim your invite</Link></p>
+          </form>
+          <p className="form-message" role="alert" aria-live="polite">{error}</p>
+          <p className="form-hint invite-help">Have an invitation? <Link href="/claim-invite">Claim your invite</Link></p>
+        </>}
         </CardContent>
       </Card>
     </main>
