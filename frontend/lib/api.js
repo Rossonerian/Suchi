@@ -94,6 +94,8 @@ export const saasApi = {
   createMeeting: (payload, accessToken) => request('/v1/meetings', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
   updateMeeting: (id, payload, accessToken) => request(`/v1/meetings/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }, accessToken),
   cancelMeeting: (id, accessToken) => request(`/v1/meetings/${encodeURIComponent(id)}/cancel`, { method: 'POST' }, accessToken),
+  askAi: (payload, accessToken) => request('/v1/ai/ask', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
+  confirmAiWrite: (token, accessToken) => request('/v1/ai/confirm', { method: 'POST', body: JSON.stringify({ token }) }, accessToken),
   startGoogleCalendar: (accessToken) => request('/v1/integrations/google/calendar/start', {}, accessToken),
   googleCalendarStatus: (accessToken) => request('/v1/integrations/google/calendar/status', {}, accessToken),
 };
