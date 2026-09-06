@@ -302,6 +302,8 @@ model Meeting {
   startAt        DateTime
   endAt          DateTime
   timezone       String
+  status         String            @default("scheduled")
+  cancelledAt    DateTime?
   location       String            @default("")
   videoUrl       String            @default("")
   provider       String?

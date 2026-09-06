@@ -87,4 +87,11 @@ export const saasApi = {
   createTask: (payload, accessToken) => request('/v1/tasks', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
   updateTask: (id, payload, accessToken) => request(`/v1/tasks/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }, accessToken),
   deleteTask: (id, accessToken) => request(`/v1/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' }, accessToken),
+  listMeetings: (filters = {}, accessToken) => {
+    const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value)).toString();
+    return request(`/v1/meetings${query ? `?${query}` : ''}`, {}, accessToken);
+  },
+  createMeeting: (payload, accessToken) => request('/v1/meetings', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
+  updateMeeting: (id, payload, accessToken) => request(`/v1/meetings/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }, accessToken),
+  cancelMeeting: (id, accessToken) => request(`/v1/meetings/${encodeURIComponent(id)}/cancel`, { method: 'POST' }, accessToken),
 };

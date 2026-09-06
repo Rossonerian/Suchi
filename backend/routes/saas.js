@@ -3,6 +3,7 @@ const { requireClerkOrganization } = require('../utils/clerk');
 const { getSaasDatabase } = require('../saas/database');
 const { listProjects, getProject, createProject } = require('../saas/projects');
 const { listTasks, getTask, createTask, updateTask, deleteTask } = require('../saas/tasks');
+const { listMeetings, createMeeting, updateMeeting, cancelMeeting } = require('../saas/meetings');
 
 const router = express.Router();
 router.use(requireClerkOrganization);
@@ -81,6 +82,42 @@ router.delete('/tasks/:taskId', async (req, res, next) => {
   try {
     await deleteTask(getSaasDatabase(), req.organizationContext, req.params.taskId);
     return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/meetings', async (req, res, next) => {
+  try {
+    const meetings = await listMeetings(getSaasDatabase(), req.organizationContext, { from: req.query.from, to: req.query.to });
+    return res.json({ meetings });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post('/meetings', async (req, res, next) => {
+  try {
+    const meeting = await createMeeting(getSaasDatabase(), req.organizationContext, req.body);
+    return res.status(201).json({ meeting });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post('/meetings/:meetingId/cancel', async (req, res, next) => {
+  try {
+    const meeting = await cancelMeeting(getSaasDatabase(), req.organizationContext, req.params.meetingId);
+    return res.json({ meeting });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.patch('/meetings/:meetingId', async (req, res, next) => {
+  try {
+    const meeting = await updateMeeting(getSaasDatabase(), req.organizationContext, req.params.meetingId, req.body);
+    return res.json({ meeting });
   } catch (error) {
     return next(error);
   }
