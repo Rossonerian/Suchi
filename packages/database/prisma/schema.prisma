@@ -351,6 +351,7 @@ model Notification {
   body           String
   resourceType   String?
   resourceId     String?
+  dedupeKey      String?        @unique
   readAt         DateTime?
   createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

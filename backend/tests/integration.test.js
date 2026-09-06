@@ -102,6 +102,12 @@ test('SaaS project API stays unavailable until Clerk is explicitly configured', 
   });
 });
 
+test('background job endpoint stays unavailable until Inngest is configured', async () => {
+  const response = await request('/api/inngest');
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { error: 'Background jobs are not configured.', code: 'JOBS_UNAVAILABLE' });
+});
+
 test('password login is generic and never serializes password hashes', async () => {
   const valid = await request('/api/auth/login', { method: 'POST', body: json({ email: alice.email, password }) });
   assert.equal(valid.status, 200);
