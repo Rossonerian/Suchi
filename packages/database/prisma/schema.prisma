@@ -285,6 +285,8 @@ model Attachment {
   fileName       String
   contentType    String
   byteSize       Int
+  status         String    @default("pending")
+  uploadedAt     DateTime?
   createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   task           Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade)

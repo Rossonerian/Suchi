@@ -20,6 +20,7 @@ const integrationsRouter = require('./routes/integrations');
 const aiRouter = require('./routes/ai');
 const workspaceRouter = require('./routes/workspace');
 const { router: billingRouter, stripeWebhookRouter } = require('./routes/billing');
+const attachmentsRouter = require('./routes/attachments');
 const { rateLimitHandler } = require('./utils/rateLimit');
 
 const app = express();
@@ -63,6 +64,7 @@ app.use('/api/v1/integrations', integrationsRouter);
 app.use('/api/v1/ai', aiRouter);
 app.use('/api/v1', workspaceRouter);
 app.use('/api/v1/billing', billingRouter);
+app.use('/api/v1', attachmentsRouter);
 app.use('/api/v1', saasRouter);
 app.use('/api/inngest', jobsRouter);
 app.get('/api/health', (req, res) => res.json({ ok: true }));
