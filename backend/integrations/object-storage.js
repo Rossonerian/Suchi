@@ -1,6 +1,6 @@
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { z } = require('zod');
 const { AppError, parseSchema } = require('../utils/validation');
@@ -49,10 +49,16 @@ async function createDownload({ db, context, attachmentId, s3Client = null, sign
   return { downloadUrl, expiresIn: 10 * 60 };
 }
 
-async function completeUpload({ db, context, attachmentId }) {
+async function completeUpload({ db, context, attachmentId, s3Client = null }) {
   await resolveMembership(db, context);
   const attachment = await db.attachment.findFirst({ where: { id: attachmentId, organizationId: context.organizationId, status: 'pending' } });
   if (!attachment) throw new AppError('Attachment not found.', 404, 'ATTACHMENT_NOT_FOUND');
+  const config = storageConfig();
+  try {
+    await (s3Client || createStorageClient(config)).send(new HeadObjectCommand({ Bucket: config.bucket, Key: attachment.objectKey }));
+  } catch {
+    throw new AppError('The upload has not completed.', 409, 'ATTACHMENT_UPLOAD_INCOMPLETE');
+  }
   return db.attachment.update({ where: { id: attachment.id }, data: { status: 'uploaded', uploadedAt: new Date() } });
 }
 

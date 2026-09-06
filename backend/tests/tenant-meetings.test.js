@@ -36,6 +36,18 @@ test('meeting reads and writes are organization-scoped', async () => {
   await assert.rejects(() => cancelMeeting(db, contextA, 'meeting_from_other_org'), { code: 'MEETING_NOT_FOUND', status: 404 });
 });
 
+test('meeting filters reject malformed dates and inverted ranges', async () => {
+  const db = fakeDatabase();
+  await assert.rejects(
+    () => listMeetings(db, contextA, { from: 'not-a-date' }),
+    { code: 'VALIDATION_ERROR', status: 400 },
+  );
+  await assert.rejects(
+    () => listMeetings(db, contextA, { from: '2099-01-02T00:00:00.000Z', to: '2099-01-01T00:00:00.000Z' }),
+    { code: 'VALIDATION_ERROR', status: 400 },
+  );
+});
+
 test('meeting creation validates time order and creates attendee notifications', async () => {
   const db = fakeDatabase();
   const meeting = await createMeeting(db, contextA, {

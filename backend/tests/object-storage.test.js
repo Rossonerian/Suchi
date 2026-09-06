@@ -33,11 +33,20 @@ test('attachment uploads use tenant-prefixed keys and signed URLs', async () => 
 
 test('attachment completion and download remain organization-scoped', async () => {
   const db = dbForAttachment();
-  const completed = await completeUpload({ db, context, attachmentId: 'attachment_a' });
+  const completed = await completeUpload({ db, context, attachmentId: 'attachment_a', s3Client: { send: async () => ({}) } });
   assert.equal(completed.status, 'uploaded');
   const result = await createDownload({ db, context, attachmentId: 'attachment_a', s3Client: {}, signUrl: async (_client, command, options) => { assert.equal(command.input.ResponseContentType, 'application/pdf'); assert.equal(options.expiresIn, 600); return 'https://signed-download.example'; } });
   assert.equal(result.downloadUrl, 'https://signed-download.example');
   await assert.rejects(() => createDownload({ db, context: { ...context, organizationId: 'org_b' }, attachmentId: 'attachment_a', s3Client: {}, signUrl: async () => 'nope' }), { code: 'ATTACHMENT_NOT_FOUND', status: 404 });
+});
+
+test('attachment completion does not mark an object uploaded before storage confirms it exists', async () => {
+  const db = dbForAttachment();
+  await assert.rejects(
+    () => completeUpload({ db, context, attachmentId: 'attachment_a', s3Client: { send: async () => { throw new Error('not found'); } } }),
+    { code: 'ATTACHMENT_UPLOAD_INCOMPLETE', status: 409 },
+  );
+  assert.equal(db.attachment ? (await db.attachment.findFirst({ where: { id: 'attachment_a', organizationId: 'org_a', status: 'pending' } })).status : undefined, 'pending');
 });
 
 test('unsupported attachment types fail before a signed URL is issued', async () => {

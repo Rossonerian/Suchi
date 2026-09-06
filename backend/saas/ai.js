@@ -113,6 +113,7 @@ async function askAi({ db, context, input, client = new OpenRouterClient() }) {
         const rawArguments = call?.function?.arguments;
         const result = await executeToolCall(name, typeof rawArguments === 'string' ? JSON.parse(rawArguments) : (rawArguments || {}), { db, context });
         if (result?.requiresConfirmation) {
+          if (!run) throw new AppError('AI confirmation storage is unavailable.', 503, 'AI_STORAGE_UNAVAILABLE');
           const nonce = crypto.randomUUID();
           await addConfirmationNonce(db, run, nonce);
           proposals.push({

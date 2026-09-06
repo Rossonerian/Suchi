@@ -17,6 +17,7 @@ const meetingInput = meetingFields.superRefine((value, ctx) => {
   if (value.endAt <= value.startAt) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['endAt'], message: 'endAt must be after startAt.' });
 });
 const updateMeetingInput = meetingFields.partial().strict();
+const meetingFilterInput = z.object({ from: z.coerce.date().optional(), to: z.coerce.date().optional() }).strict();
 
 function parseMeetingInput(input) {
   try {
@@ -40,9 +41,13 @@ async function resolveAttendees(db, organizationId, ids) {
 
 async function listMeetings(db, context, filters = {}) {
   await resolveMembership(db, context);
+  const parsedFilters = (() => {
+    try { return meetingFilterInput.parse(filters); } catch (error) { throw new AppError('Meeting filters are invalid.', 400, 'VALIDATION_ERROR', { issues: error.issues || [] }); }
+  })();
+  if (parsedFilters.from && parsedFilters.to && parsedFilters.to < parsedFilters.from) throw new AppError('Meeting filter end must be after its start.', 400, 'VALIDATION_ERROR');
   const where = { organizationId: context.organizationId };
-  if (filters.from) where.startAt = { gte: new Date(filters.from) };
-  if (filters.to) where.endAt = { lte: new Date(filters.to) };
+  if (parsedFilters.from) where.startAt = { gte: parsedFilters.from };
+  if (parsedFilters.to) where.endAt = { lte: parsedFilters.to };
   return db.meeting.findMany({ where, orderBy: { startAt: 'asc' } });
 }
 
@@ -120,4 +125,4 @@ async function updateMeeting(db, context, meetingId, input) {
   });
 }
 
-module.exports = { meetingInput, updateMeetingInput, parseMeetingInput, listMeetings, createMeeting, updateMeeting, cancelMeeting };
+module.exports = { meetingInput, updateMeetingInput, meetingFilterInput, parseMeetingInput, listMeetings, createMeeting, updateMeeting, cancelMeeting };
