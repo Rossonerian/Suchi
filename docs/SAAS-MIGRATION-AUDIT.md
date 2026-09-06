@@ -282,3 +282,24 @@ Prisma release during Phase 1 implementation.
 
 External credentials are a gate for provider verification, not a reason to stop
 local schema, authorization, migration, and test work.
+
+## Post-audit implementation update (2026-09-07)
+
+The audit above records the pre-migration baseline. Incremental commits since
+then now provide a Prisma/PostgreSQL schema and migrations, a feature-flagged
+Clerk adapter, organization provisioning/invitations, tenant-scoped project,
+task, meeting, comment, search, notification, billing, and attachment service
+boundaries, Inngest deadline notifications, encrypted Google Calendar OAuth,
+server-only OpenRouter tools with signed AI write confirmation, and an Expo
+Router mobile starter. The legacy Mongo/session dashboard remains the default
+when `AUTH_PROVIDER` is not explicitly set to `clerk`, so existing NIDAR pages
+continue to run during the transition.
+
+Current local verification is stronger than the original baseline: 79 backend
+tests, 6 frontend tests, 3 shared-domain tests, 2 database-client tests, the
+Next production build, Prisma schema/client validation, and an Expo web export
+pass. Cross-tenant checks currently exercise the service boundaries with fake
+repositories; a real PostgreSQL/Clerk end-to-end isolation rehearsal is still
+required before production. Google, Stripe, OpenRouter, S3/R2, Inngest, and
+Expo push delivery are implemented behind explicit configuration but have not
+been verified against live provider accounts in this environment.
