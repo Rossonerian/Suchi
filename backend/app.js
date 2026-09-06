@@ -19,6 +19,7 @@ const jobsRouter = require('./routes/jobs');
 const integrationsRouter = require('./routes/integrations');
 const aiRouter = require('./routes/ai');
 const workspaceRouter = require('./routes/workspace');
+const { router: billingRouter, stripeWebhookRouter } = require('./routes/billing');
 const { rateLimitHandler } = require('./utils/rateLimit');
 
 const app = express();
@@ -43,6 +44,9 @@ app.use(cors({
   origin: (origin, callback) => callback(null, !origin || allowedOrigins.includes(origin)),
   credentials: true,
 }));
+// Stripe requires the untouched request bytes for signature verification. This
+// endpoint is mounted before the JSON parser; all other API routes use JSON.
+app.use('/api/billing/stripe/webhook', stripeWebhookRouter);
 app.use(express.json({ limit: '100kb' }));
 const limiterOptions = { standardHeaders: 'draft-7', legacyHeaders: false, handler: rateLimitHandler, skip: () => process.env.NODE_ENV === 'test' };
 app.use('/api', rateLimit({ ...limiterOptions, windowMs: 60 * 1000, limit: 120 }));
@@ -58,6 +62,7 @@ app.use('/api/v1/organizations', organizationsRouter);
 app.use('/api/v1/integrations', integrationsRouter);
 app.use('/api/v1/ai', aiRouter);
 app.use('/api/v1', workspaceRouter);
+app.use('/api/v1/billing', billingRouter);
 app.use('/api/v1', saasRouter);
 app.use('/api/inngest', jobsRouter);
 app.get('/api/health', (req, res) => res.json({ ok: true }));

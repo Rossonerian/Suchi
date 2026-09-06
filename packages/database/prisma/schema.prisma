@@ -500,6 +500,16 @@ model AiUsageRecord {
   @@index([organizationId])
 }
 
+model BillingWebhookEvent {
+  id          String    @id @default(cuid())
+  provider    String
+  eventId     String
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+
+  @@unique([provider, eventId])
+}
+
 model Subscription {
   id             String       @id @default(cuid())
   organizationId String       @unique
