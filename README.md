@@ -10,6 +10,8 @@ team, and every attendee gets an emailed invite immediately (Gmail SMTP).
 
 - `backend/` — Express + MongoDB API → deploy to **Render**
 - `frontend/` — Next.js dashboard (plain JS) → deploy to **Vercel**
+- `apps/mobile/` — Expo Router mobile client (TypeScript; optional during migration)
+- `packages/` — shared domain contracts and Prisma/PostgreSQL SaaS schema
 
 ## Quick start (local)
 
@@ -44,6 +46,15 @@ cd ../frontend && npm run lint && npm test && npm run build
 ```
 
 Never add a live MongoDB URI, Gmail account, or app password to an `.env.example` file. Use the placeholders and create ignored local `.env` files instead. Production deployments must use HTTPS, an exact `CORS_ORIGIN`, and `SESSION_SAME_SITE=none` when the Vercel frontend and Render API are on different sites.
+
+## SaaS workspace preview
+
+The organization-scoped SaaS API and Clerk-aware workspace routes are enabled
+only when `AUTH_PROVIDER=clerk`, Clerk keys, and `DATABASE_URL` are explicitly
+configured. The legacy Mongo/session dashboard remains the compatibility path
+until each resource is migrated. Start with the root `.env.example` and the
+architecture documents in `docs/`; do not point migration commands at a
+production database without a reviewed dry-run report.
 
 SECURITY ACTION REQUIRED: MongoDB/Gmail credentials that appeared in earlier Git history must be rotated by their owner. Removing them from the current tree does not invalidate credentials already present in Git history.
 

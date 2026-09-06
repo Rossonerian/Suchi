@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "NIDAR Workspace",
+    "slug": "nidar-workspace",
+    "scheme": "nidar",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": ["expo-router", "expo-secure-store", "expo-notifications"],
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.nidar.workspace" },
+    "android": { "package": "com.nidar.workspace" },
+    "extra": { "router": { "origin": false } }
+  }
+}
