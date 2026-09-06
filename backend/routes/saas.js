@@ -2,6 +2,7 @@ const express = require('express');
 const { requireClerkOrganization } = require('../utils/clerk');
 const { getSaasDatabase } = require('../saas/database');
 const { listProjects, getProject, createProject } = require('../saas/projects');
+const { listTasks, getTask, createTask, updateTask, deleteTask } = require('../saas/tasks');
 
 const router = express.Router();
 router.use(requireClerkOrganization);
@@ -29,6 +30,57 @@ router.post('/projects', async (req, res, next) => {
   try {
     const project = await createProject(getSaasDatabase(), req.organizationContext, req.body);
     return res.status(201).json({ project });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/tasks', async (req, res, next) => {
+  try {
+    const tasks = await listTasks(getSaasDatabase(), req.organizationContext, {
+      projectId: req.query.projectId,
+      status: req.query.status,
+      priority: req.query.priority,
+      assigneeMembershipId: req.query.assigneeMembershipId,
+    });
+    return res.json({ tasks });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/tasks/:taskId', async (req, res, next) => {
+  try {
+    const task = await getTask(getSaasDatabase(), req.organizationContext, req.params.taskId);
+    if (!task) return res.status(404).json({ error: 'Task not found.', code: 'TASK_NOT_FOUND' });
+    return res.json({ task });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post('/tasks', async (req, res, next) => {
+  try {
+    const task = await createTask(getSaasDatabase(), req.organizationContext, req.body);
+    return res.status(201).json({ task });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.patch('/tasks/:taskId', async (req, res, next) => {
+  try {
+    const task = await updateTask(getSaasDatabase(), req.organizationContext, req.params.taskId, req.body);
+    return res.json({ task });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.delete('/tasks/:taskId', async (req, res, next) => {
+  try {
+    await deleteTask(getSaasDatabase(), req.organizationContext, req.params.taskId);
+    return res.status(204).send();
   } catch (error) {
     return next(error);
   }

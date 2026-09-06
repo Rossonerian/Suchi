@@ -79,4 +79,12 @@ export const saasApi = {
   listProjects: (accessToken) => request('/v1/projects', {}, accessToken),
   getProject: (id, accessToken) => request(`/v1/projects/${encodeURIComponent(id)}`, {}, accessToken),
   createProject: (payload, accessToken) => request('/v1/projects', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
+  listTasks: (filters = {}, accessToken) => {
+    const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value)).toString();
+    return request(`/v1/tasks${query ? `?${query}` : ''}`, {}, accessToken);
+  },
+  getTask: (id, accessToken) => request(`/v1/tasks/${encodeURIComponent(id)}`, {}, accessToken),
+  createTask: (payload, accessToken) => request('/v1/tasks', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
+  updateTask: (id, payload, accessToken) => request(`/v1/tasks/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }, accessToken),
+  deleteTask: (id, accessToken) => request(`/v1/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' }, accessToken),
 };
