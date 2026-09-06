@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate": "prisma validate --schema prisma/schema.prisma"
+    "validate": "prisma validate --schema prisma/schema.prisma",
+    "generate": "prisma generate --schema prisma/schema.prisma",
+    "migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
+    "migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "7.10.0"

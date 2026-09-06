@@ -2,17 +2,18 @@
 
 ## ADR-001: PostgreSQL with Prisma
 
-**Status:** proposed for Phase 1; not installed or connected yet.
+**Status:** Phase 1 schema and initial migration implemented; application
+repositories are not yet switched from MongoDB.
 
 The target product has relational membership, project, task dependency,
 meeting attendee, integration, audit, usage, and billing invariants. PostgreSQL
 provides foreign keys, unique constraints, row-level query predicates, and
 transactions that match those invariants better than the current globally
-queried MongoDB collections. Prisma is proposed for generated TypeScript types,
-schema migrations, and a mature PostgreSQL adapter. The exact Prisma version and
-runtime adapter must be verified during Phase 1 before installation; current
-official documentation identifies Prisma 8 as the current release and documents
-transactional PostgreSQL migrations.
+queried MongoDB collections. Prisma provides generated TypeScript types, schema
+migrations, and a mature PostgreSQL adapter. Prisma 7.10.0 was selected after
+checking npm compatibility with the current Node 20+/22 CI baseline. Prisma 8
+is currently a release candidate with a newer Node floor, so it is not used
+during this incremental migration.
 
 Alternatives considered:
 
@@ -66,5 +67,6 @@ Suggested invariants and indexes:
 - transactions for membership changes, task dependency updates, event mapping,
   subscription/webhook state, and AI proposed-write confirmation.
 
-The full Prisma schema is a Phase 1 implementation artifact, not created by
-this audit.
+The full Prisma schema and committed initial migration live in
+`packages/database/prisma/`; the existing Express routes still use MongoDB
+until service-by-service cutover is covered by integration tests.
