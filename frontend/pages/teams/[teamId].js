@@ -5,7 +5,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { api } from '../../lib/api';
-import { getMember } from '../../lib/session';
 import TeamColumn from '../../components/TeamColumn';
 import TaskDetailModal from '../../components/TaskDetailModal';
 
@@ -39,12 +38,14 @@ export default function TeamPage() {
   }, [teamId]);
 
   useEffect(() => {
-    const m = getMember();
-    if (!m) {
+    let active = true;
+    api.getCurrentMember().then((data) => {
+      if (!active) return;
+      setMember(data.member || data);
+    }).catch(() => {
       router.replace('/');
-      return;
-    }
-    setMember(m);
+    });
+    return () => { active = false; };
   }, [router]);
 
   useEffect(() => {

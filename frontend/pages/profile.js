@@ -44,7 +44,7 @@ export default function Profile() {
     setSaving(true);
     setSaveStatus(null);
     try {
-      const updated = await api.updateMember(member._id, { email: email.trim(), role: role.trim() });
+      const updated = await api.updateMember(member._id, { email: email.trim() });
       const merged = { ...member, email: updated.email, role: updated.role };
       setMember(merged);
       setSaveStatus({ ok: true, message: 'Profile updated.' });
@@ -99,9 +99,8 @@ export default function Profile() {
           <label style={styles.label}>Role</label>
           <input
             style={styles.input}
-            placeholder="e.g. LinkedIn, Frame lead, SLAM"
             value={role}
-            onChange={(e) => setRole(e.target.value)}
+            disabled
           />
 
           <button style={styles.saveBtn} disabled={saving}>

@@ -232,6 +232,29 @@ test('only admins can manage members and access changes revoke sessions', async 
   assert.equal((await request('/api/auth/me', { headers: { cookie: aliceCookie } })).status, 401);
 });
 
+test('profile updates are self-scoped and cannot escalate roles', async () => {
+  const memberCookie = await login();
+  const emailUpdate = await request(`/api/members/${alice._id}`, {
+    method: 'PATCH', headers: { cookie: memberCookie },
+    body: json({ email: 'alice-renamed@example.com' }),
+  });
+  assert.equal(emailUpdate.status, 200);
+  assert.equal((await emailUpdate.json()).email, 'alice-renamed@example.com');
+
+  const roleEscalation = await request(`/api/members/${alice._id}`, {
+    method: 'PATCH', headers: { cookie: memberCookie },
+    body: json({ role: 'admin' }),
+  });
+  assert.equal(roleEscalation.status, 403);
+
+  const otherMemberUpdate = await request(`/api/members/${bob._id}`, {
+    method: 'PATCH', headers: { cookie: memberCookie },
+    body: json({ email: 'bob-renamed@example.com' }),
+  });
+  assert.equal(otherMemberUpdate.status, 403);
+  await Member.updateOne({ _id: alice._id }, { $set: { email: 'alice@example.com' } });
+});
+
 test('protected mutations use the session identity and preserve team authorization', async () => {
   const aliceCookie = await login();
   assert.equal((await request('/api/tasks', { method: 'POST', headers: { cookie: aliceCookie, origin: 'https://evil.example' }, body: json({ title: 'csrf', team: teams[0]._id }) })).status, 403);
