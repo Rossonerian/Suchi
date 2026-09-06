@@ -108,4 +108,5 @@ export const saasApi = {
   createComment: (taskId, body, accessToken) => request(`/v1/tasks/${encodeURIComponent(taskId)}/comments`, { method: 'POST', body: JSON.stringify({ body }) }, accessToken),
   startGoogleCalendar: (accessToken) => request('/v1/integrations/google/calendar/start', {}, accessToken),
   googleCalendarStatus: (accessToken) => request('/v1/integrations/google/calendar/status', {}, accessToken),
+  getBillingStatus: (accessToken) => request('/v1/billing/status', {}, accessToken),
 };
