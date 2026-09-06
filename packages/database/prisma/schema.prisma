@@ -1,0 +1,529 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrganizationRole {
+  owner
+  admin
+  member
+}
+
+enum ProjectRole {
+  owner
+  manager
+  member
+  viewer
+}
+
+enum TaskStatus {
+  backlog
+  todo
+  in_progress
+  blocked
+  review
+  done
+  cancelled
+}
+
+enum TaskPriority {
+  none
+  low
+  medium
+  high
+  urgent
+}
+
+model UserProfile {
+  id              String   @id @default(cuid())
+  clerkUserId     String   @unique
+  displayName     String
+  email           String?
+  avatarUrl       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  memberships     OrganizationMembership[]
+  ownedProjects   Project[] @relation("ProjectOwner")
+  createdTasks    Task[]   @relation("TaskCreator")
+  comments        Comment[] @relation("CommentAuthor")
+  activityEvents  ActivityEvent[] @relation("ActivityActor")
+  auditLogs       AuditLog[] @relation("AuditActor")
+}
+
+model Organization {
+  id              String   @id @default(cuid())
+  clerkOrgId      String   @unique
+  name            String
+  slug            String   @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  settings        OrganizationSettings?
+  memberships     OrganizationMembership[]
+  teams           Team[]
+  projects        Project[]
+  tasks           Task[]
+  labels          Label[]
+  comments        Comment[]
+  attachments     Attachment[]
+  meetings        Meeting[]
+  notifications   Notification[]
+  integrations    IntegrationConnection[]
+  activityEvents  ActivityEvent[]
+  auditLogs       AuditLog[]
+  aiConversations AiConversation[]
+  aiUsageRecords  AiUsageRecord[]
+  externalMappings ExternalResourceMapping[]
+  usageCounters   UsageCounter[]
+  subscription    Subscription?
+}
+
+model OrganizationSettings {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  timezone       String       @default("UTC")
+  weekStartsOn   Int          @default(1)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model OrganizationMembership {
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrganizationRole @default(member)
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           UserProfile      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamMembers    TeamMember[]
+  projectMembers ProjectMember[]
+  assignedTasks  TaskAssignee[]
+  meetingAttendees MeetingAttendee[]
+
+  @@unique([organizationId, userId])
+  @@index([organizationId, role])
+}
+
+model Team {
+  id             String                  @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  createdAt      DateTime                @default(now())
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members        TeamMember[]
+  projects       Project[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+}
+
+model TeamMember {
+  id           String                 @id @default(cuid())
+  teamId       String
+  membershipId String
+  team         Team                  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  membership   OrganizationMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, membershipId])
+}
+
+model Project {
+  id             String          @id @default(cuid())
+  organizationId String
+  teamId         String?
+  name           String
+  slug           String
+  description    String          @default("")
+  status         String          @default("active")
+  ownerId        String
+  startDate      DateTime?
+  targetDate     DateTime?
+  archivedAt     DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  team           Team?           @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  owner          UserProfile     @relation("ProjectOwner", fields: [ownerId], references: [id])
+  members        ProjectMember[]
+  milestones     Milestone[]
+  tasks          Task[]
+  meetings       Meeting[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, status])
+  @@index([organizationId, targetDate])
+}
+
+model ProjectMember {
+  id           String                 @id @default(cuid())
+  projectId    String
+  membershipId String
+  role         ProjectRole            @default(member)
+  project      Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  membership   OrganizationMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, membershipId])
+}
+
+model Milestone {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  description String   @default("")
+  targetDate  DateTime?
+  completedAt DateTime?
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@index([projectId, targetDate])
+}
+
+model Task {
+  id            String         @id @default(cuid())
+  organizationId String
+  projectId     String
+  milestoneId   String?
+  creatorId     String
+  title         String
+  description   String         @default("")
+  status        TaskStatus     @default(todo)
+  priority      TaskPriority   @default(none)
+  startAt       DateTime?
+  dueAt         DateTime?
+  completedAt   DateTime?
+  recurringRule String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone     Milestone?     @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  creator       UserProfile    @relation("TaskCreator", fields: [creatorId], references: [id])
+  assignees     TaskAssignee[]
+  dependencies  TaskDependency[] @relation("TaskDependencies")
+  dependents    TaskDependency[] @relation("TaskDependents")
+  subtasks      Subtask[]
+  labels        TaskLabel[]
+  comments      Comment[]
+  attachments   Attachment[]
+
+  @@index([organizationId, status, dueAt])
+  @@index([organizationId, projectId])
+  @@index([organizationId, creatorId])
+}
+
+model TaskAssignee {
+  id           String                 @id @default(cuid())
+  taskId       String
+  membershipId String
+  task         Task                   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  membership   OrganizationMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, membershipId])
+  @@index([membershipId])
+}
+
+model TaskDependency {
+  id            String @id @default(cuid())
+  taskId        String
+  dependencyId  String
+  task          Task   @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
+  dependency    Task   @relation("TaskDependents", fields: [dependencyId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependencyId])
+}
+
+model Subtask {
+  id          String   @id @default(cuid())
+  taskId      String
+  title       String
+  completedAt DateTime?
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Label {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  color          String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tasks          TaskLabel[]
+
+  @@unique([organizationId, name])
+}
+
+model TaskLabel {
+  taskId  String
+  labelId String
+  task    Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  label   Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, labelId])
+}
+
+model Comment {
+  id             String       @id @default(cuid())
+  organizationId String
+  taskId         String?
+  authorId       String
+  body           String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  task           Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author         UserProfile  @relation("CommentAuthor", fields: [authorId], references: [id])
+
+  @@index([organizationId, taskId, createdAt])
+}
+
+model Attachment {
+  id             String       @id @default(cuid())
+  organizationId String
+  taskId         String?
+  objectKey      String
+  fileName       String
+  contentType    String
+  byteSize       Int
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  task           Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, taskId])
+}
+
+model Meeting {
+  id             String            @id @default(cuid())
+  organizationId String
+  projectId      String?
+  creatorId      String
+  title          String
+  description    String            @default("")
+  startAt        DateTime
+  endAt          DateTime
+  timezone       String
+  location       String            @default("")
+  videoUrl       String            @default("")
+  provider       String?
+  externalEventId String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  attendees      MeetingAttendee[]
+  mappings       MeetingExternalMapping[]
+
+  @@index([organizationId, startAt])
+  @@unique([organizationId, provider, externalEventId])
+}
+
+model MeetingAttendee {
+  id           String                 @id @default(cuid())
+  meetingId    String
+  membershipId String?
+  email        String
+  meeting      Meeting                @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  membership   OrganizationMembership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+
+  @@index([meetingId])
+}
+
+model MeetingExternalMapping {
+  id                String   @id @default(cuid())
+  meetingId         String
+  provider          String
+  externalEventId   String
+  externalCalendarId String?
+  syncVersion       String?
+  meeting           Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalEventId])
+}
+
+model Notification {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  type           String
+  title          String
+  body           String
+  resourceType   String?
+  resourceId     String?
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, userId, readAt, createdAt])
+}
+
+model NotificationPreference {
+  id        String @id @default(cuid())
+  userId    String
+  channel   String
+  eventType String
+  enabled   Boolean @default(true)
+
+  @@unique([userId, channel, eventType])
+}
+
+model IntegrationConnection {
+  id             String       @id @default(cuid())
+  organizationId String
+  provider       String
+  status         String       @default("connected")
+  encryptedToken String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  accounts       IntegrationAccount[]
+  webhookEvents  IntegrationWebhookEvent[]
+
+  @@unique([organizationId, provider])
+}
+
+model IntegrationAccount {
+  id           String               @id @default(cuid())
+  connectionId String
+  externalId   String
+  displayName  String
+  connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, externalId])
+}
+
+model IntegrationWebhookEvent {
+  id           String               @id @default(cuid())
+  connectionId String
+  provider     String
+  eventId      String
+  receivedAt   DateTime             @default(now())
+  processedAt  DateTime?
+  connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, eventId])
+}
+
+model ExternalResourceMapping {
+  id             String   @id @default(cuid())
+  organizationId String
+  provider       String
+  resourceType   String
+  localId        String
+  externalId     String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, resourceType, externalId])
+  @@unique([organizationId, resourceType, localId, provider])
+}
+
+model ActivityEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  actorId        String?
+  action         String
+  resourceType   String
+  resourceId     String
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor          UserProfile? @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, resourceType, resourceId, createdAt])
+}
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  organizationId String
+  actorId        String?
+  action         String
+  resourceType   String
+  resourceId     String?
+  source         String
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor          UserProfile? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+}
+
+model AiConversation {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  title          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  messages       AiMessage[]
+  runs           AiRun[]
+
+  @@index([organizationId, userId, updatedAt])
+}
+
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  createdAt      DateTime       @default(now())
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model AiRun {
+  id             String         @id @default(cuid())
+  conversationId String
+  capability     String
+  model          String
+  status         String
+  latencyMs      Int?
+  createdAt      DateTime       @default(now())
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  usage           AiUsageRecord?
+}
+
+model AiUsageRecord {
+  id          String   @id @default(cuid())
+  runId       String   @unique
+  organizationId String
+  inputTokens Int?
+  outputTokens Int?
+  estimatedCost Decimal? @db.Decimal(12, 6)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  run         AiRun    @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model Subscription {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  provider       String       @default("stripe")
+  externalId     String?      @unique
+  status         String
+  planKey        String
+  currentPeriodEnd DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  entitlements   SubscriptionEntitlement[]
+}
+
+model SubscriptionEntitlement {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  key            String
+  value          String
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, key])
+}
+
+model UsageCounter {
+  id             String       @id @default(cuid())
+  organizationId String
+  key            String
+  periodStart    DateTime
+  quantity       Int          @default(0)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, key, periodStart])
+}
