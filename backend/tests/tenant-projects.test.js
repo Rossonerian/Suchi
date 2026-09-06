@@ -26,6 +26,8 @@ function fakeDatabase() {
         projects.push(project);
         return project;
       },
+      update: async ({ where, data }) => ({ id: where.id, ...data }),
+      delete: async ({ where }) => ({ id: where.id }),
     },
     projectMember: {
       create: async ({ data }) => data,
@@ -47,6 +49,7 @@ test('project creation derives owner and organization from context', async () =>
   assert.equal(project.ownerId, 'local_user_a');
   assert.equal(project.members[0].membershipId, 'membership_a');
   assert.equal(project.members[0].role, 'owner');
+  assert.equal(project.slug, 'new-project');
 });
 
 test('project access rejects a user without an organization membership', async () => {

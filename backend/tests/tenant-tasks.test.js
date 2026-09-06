@@ -56,3 +56,11 @@ test('task update and delete cannot cross organization boundaries', async () => 
   await assert.rejects(() => updateTask(db, contextA, 'task_from_other_org', { status: 'done' }), { code: 'TASK_NOT_FOUND', status: 404 });
   await assert.rejects(() => deleteTask(db, contextA, 'task_from_other_org'), { code: 'TASK_NOT_FOUND', status: 404 });
 });
+
+test('organization members cannot delete tasks and completed status records a timestamp', async () => {
+  const db = fakeDatabase();
+  await assert.rejects(() => deleteTask(db, contextA, 'task_a'), { code: 'FORBIDDEN', status: 403 });
+  const updated = await updateTask(db, contextA, 'task_a', { status: 'done' });
+  assert.equal(updated.status, 'done');
+  assert.ok(updated.completedAt instanceof Date);
+});

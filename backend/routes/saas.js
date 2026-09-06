@@ -1,7 +1,7 @@
 const express = require('express');
 const { requireClerkOrganization } = require('../utils/clerk');
 const { getSaasDatabase } = require('../saas/database');
-const { listProjects, getProject, createProject } = require('../saas/projects');
+const { listProjects, getProject, createProject, updateProject, deleteProject } = require('../saas/projects');
 const { listTasks, getTask, createTask, updateTask, deleteTask } = require('../saas/tasks');
 const { listMeetings, createMeeting, updateMeeting, cancelMeeting } = require('../saas/meetings');
 
@@ -31,6 +31,24 @@ router.post('/projects', async (req, res, next) => {
   try {
     const project = await createProject(getSaasDatabase(), req.organizationContext, req.body);
     return res.status(201).json({ project });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.patch('/projects/:projectId', async (req, res, next) => {
+  try {
+    const project = await updateProject(getSaasDatabase(), req.organizationContext, req.params.projectId, req.body);
+    return res.json({ project });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.delete('/projects/:projectId', async (req, res, next) => {
+  try {
+    await deleteProject(getSaasDatabase(), req.organizationContext, req.params.projectId);
+    return res.status(204).send();
   } catch (error) {
     return next(error);
   }
