@@ -295,10 +295,11 @@ Router mobile starter. The legacy Mongo/session dashboard remains the default
 when `AUTH_PROVIDER` is not explicitly set to `clerk`, so existing NIDAR pages
 continue to run during the transition.
 
-Current local verification is stronger than the original baseline: 79 backend
+Current local verification is stronger than the original baseline: 81 backend
 tests, 6 frontend tests, 3 shared-domain tests, 2 database-client tests, the
 Next production build, Prisma schema/client validation, and an Expo web export
-pass. Cross-tenant checks currently exercise the service boundaries with fake
+pass. The latest hardening tests cover storage-object completion checks and
+meeting filter validation. Cross-tenant checks currently exercise the service boundaries with fake
 repositories; a real PostgreSQL/Clerk end-to-end isolation rehearsal is still
 required before production. Google, Stripe, OpenRouter, S3/R2, Inngest, and
 Expo push delivery are implemented behind explicit configuration but have not
