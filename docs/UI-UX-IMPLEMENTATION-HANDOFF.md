@@ -37,6 +37,7 @@ This handoff records the implementation slices completed from the Astra UI/UX Pr
 - `ba2d3eb` — meeting DST hardening and mobile notification/deep-link safety.
 - `15fd910` — active-workspace gating, workspace-context tests, and URL-backed SaaS task filters.
 - `47a4135` — close verification blockers: route-aware workspace switching, notification failures, table semantics, mobile My Work scope, push activation race, and DST fold-preserving edits.
+- `b58b6e6` — clear shell search/notification state across workspace route changes and gate all SaaS data pages on the canonical workspace.
 
 ## Files and components changed
 
@@ -71,7 +72,7 @@ Not verified:
 
 ## Remaining risks and follow-up
 
-P0/P1 follow-up remains for live verification and deeper parity: authenticated workspace switching and populated task/table behavior require a configured Clerk development account; task assignee/priority editing needs richer API response/UI support; Google Calendar synchronization needs a development provider; AI edit/partial-success flows need backend contracts; and native notification delivery needs Expo provider/device testing. The deterministic timezone, organization-context, URL-filter, table semantics, mobile current-user filtering, mobile deep-link mapping, and cache-boundary checks are now covered locally.
+P0/P1 follow-up remains for live verification and deeper parity: authenticated workspace switching and populated task/table behavior require a configured Clerk development account; task assignee/priority editing needs richer API response/UI support; Google Calendar synchronization needs a development provider; AI edit/partial-success flows need backend contracts; and native notification delivery needs Expo provider/device testing. The deterministic timezone, organization-context, URL-filter, table semantics, shell-state reset, mobile current-user filtering, mobile deep-link mapping, and cache-boundary checks are now covered locally.
 
 No lint warnings remain. No backend, production data, external credentials, or deployments were changed.
 
