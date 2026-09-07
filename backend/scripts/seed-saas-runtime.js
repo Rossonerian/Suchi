@@ -5,10 +5,10 @@
  * all identifiers must be supplied from an already-configured Clerk
  * development instance.
  */
-require('dotenv').config();
+import 'dotenv/config';
 
-const net = require('node:net');
-const { getSaasDatabase } = require('../saas/database');
+import net from 'node:net';
+import { getSaasDatabase } from '../saas/database.js';
 
 const RUNTIME_PROVIDER = 'nidar-runtime';
 const REQUIRED_IDS = [
@@ -173,11 +173,11 @@ async function run({ env = process.env, databaseFactory = getSaasDatabase } = {}
   }
 }
 
-if (require.main === module) {
+if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').href) {
   run().then((result) => console.log(JSON.stringify(result))).catch((error) => {
     console.error(`[seed-saas-runtime] ${error.message}`);
     process.exitCode = 1;
   });
 }
 
-module.exports = { buildRuntimeSeedPlan, isLoopbackDatabaseUrl, seedRuntimeData, run, validateRuntimeSeedConfig };
+export { buildRuntimeSeedPlan, isLoopbackDatabaseUrl, seedRuntimeData, run, validateRuntimeSeedConfig };

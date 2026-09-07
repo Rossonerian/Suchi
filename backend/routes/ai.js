@@ -1,10 +1,10 @@
-const express = require('express');
-const { requireClerkOrganization } = require('../utils/clerk');
-const { getSaasDatabase } = require('../saas/database');
-const { askAi, confirmAiWrite } = require('../saas/ai');
+import express from 'express';
+import { requireOrganization } from '../saas/auth-context.js';
+import { getSaasDatabase } from '../saas/database.js';
+import { askAi, confirmAiWrite } from '../saas/ai.js';
 
 const router = express.Router();
-router.use(requireClerkOrganization);
+router.use(requireOrganization);
 
 router.post('/ask', async (req, res, next) => {
   try {
@@ -24,4 +24,4 @@ router.post('/confirm', async (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;

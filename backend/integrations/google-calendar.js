@@ -1,4 +1,4 @@
-const { google } = require('googleapis');
+import { google } from 'googleapis';
 
 const CALENDAR_SCOPES = [
   'https://www.googleapis.com/auth/calendar.events',
@@ -54,4 +54,4 @@ class GoogleCalendarProvider {
   }
 }
 
-module.exports = { CALENDAR_SCOPES, GoogleCalendarProvider };
+export { CALENDAR_SCOPES, GoogleCalendarProvider };

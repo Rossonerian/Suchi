@@ -1,8 +1,8 @@
-const { z } = require('zod');
-const { AppError } = require('../utils/validation');
-const { resolveMembership } = require('../saas/projects');
-const { listTasks, createTaskInput } = require('../saas/tasks');
-const { listMeetings } = require('../saas/meetings');
+import { z } from 'zod';
+import { AppError } from '../utils/validation.js';
+import { resolveMembership } from '../saas/projects.js';
+import { listTasks, createTaskInput } from '../saas/tasks.js';
+import { listMeetings } from '../saas/meetings.js';
 
 const toolArguments = {
   list_projects: z.object({}).strict(),
@@ -73,4 +73,4 @@ async function executeToolCall(name, rawArguments, { db, context }) {
   throw new AppError('AI tool is not available.', 400, 'AI_TOOL_NOT_FOUND');
 }
 
-module.exports = { getToolDefinitions, executeToolCall };
+export { getToolDefinitions, executeToolCall };

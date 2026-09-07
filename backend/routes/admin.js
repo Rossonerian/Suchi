@@ -1,9 +1,9 @@
-const express = require('express');
-const Member = require('../models/Member');
-const Team = require('../models/Team');
-const { parseEmail, parseObjectId, requiredString, ValidationError, AppError } = require('../utils/validation');
-const { requireAuth, requireAdmin, publicMember, revokeAllSessions } = require('../utils/auth');
-const { issueInvitation } = require('../utils/invitations');
+import express from 'express';
+import Member from '../models/Member.js';
+import Team from '../models/Team.js';
+import { parseEmail, parseObjectId, requiredString, ValidationError, AppError } from '../utils/validation.js';
+import { requireAuth, requireAdmin, publicMember, revokeAllSessions } from '../utils/auth.js';
+import { issueInvitation } from '../utils/invitations.js';
 
 const router = express.Router();
 router.use(requireAuth, requireAdmin);
@@ -104,4 +104,4 @@ router.post('/members/:id/revoke-sessions', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-module.exports = router;
+export default router;

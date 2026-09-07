@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { getToolDefinitions, executeToolCall } = require('../ai/tools');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { getToolDefinitions, executeToolCall } from '../ai/tools.js';
 
 const context = { userId: 'user_a', organizationId: 'org_a', organizationRole: 'member' };
 

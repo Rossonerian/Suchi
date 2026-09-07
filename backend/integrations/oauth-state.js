@@ -1,4 +1,4 @@
-const crypto = require('node:crypto');
+import crypto from 'node:crypto';
 
 function signingKey(secret = process.env.INTEGRATION_STATE_SECRET) {
   if (!secret) {
@@ -33,4 +33,4 @@ function verifyOAuthState(token, secret) {
   }
 }
 
-module.exports = { createOAuthState, verifyOAuthState };
+export { createOAuthState, verifyOAuthState };

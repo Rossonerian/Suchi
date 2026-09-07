@@ -9,4 +9,4 @@ const TEAMS = [
 
 const TEAM_KEYS = TEAMS.map((t) => t.key);
 
-module.exports = { TEAMS, TEAM_KEYS };
+export { TEAMS, TEAM_KEYS };

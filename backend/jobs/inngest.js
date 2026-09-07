@@ -1,6 +1,6 @@
-const { Inngest } = require('inngest');
-const { getSaasDatabase } = require('../saas/database');
-const { runDeadlineSweep } = require('./deadlines');
+import { Inngest } from 'inngest';
+import { getSaasDatabase } from '../saas/database.js';
+import { runDeadlineSweep } from './deadlines.js';
 
 const inngest = new Inngest({ id: 'nidar-saas' });
 
@@ -9,4 +9,5 @@ const deadlineNotificationSweep = inngest.createFunction(
   async ({ step }) => step.run('scan-deadlines', () => runDeadlineSweep(getSaasDatabase())),
 );
 
-module.exports = { inngest, functions: [deadlineNotificationSweep] };
+const functions = [deadlineNotificationSweep];
+export { inngest, functions };

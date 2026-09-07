@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { buildMigrationPlan, mapTaskStatus, parseArgs } = require('../scripts/migrate-nidar-to-saas');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { buildMigrationPlan, mapTaskStatus, parseArgs } from '../scripts/migrate-nidar-to-saas.js';
 
 test('legacy task statuses map to intentional SaaS states', () => {
   assert.equal(mapTaskStatus('todo'), 'todo');

@@ -11,4 +11,4 @@ function computeProgress(tasks) {
   return { total, done, inProgress, blocked, todo, percent };
 }
 
-module.exports = { computeProgress };
+export { computeProgress };

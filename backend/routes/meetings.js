@@ -1,10 +1,10 @@
 // Single responsibility: create/list meetings, and email invitees on creation.
-const express = require('express');
-const Meeting = require('../models/Meeting');
-const Member = require('../models/Member');
-const { deliverMeetingInvite, populatedMeetingResponse } = require('../services/meetingNotifications');
-const { requiredString, optionalString, normalizeHttpUrl, parseFutureDate, parseObjectId, ValidationError } = require('../utils/validation');
-const { AppError } = require('../utils/validation');
+import express from 'express';
+import Meeting from '../models/Meeting.js';
+import Member from '../models/Member.js';
+import { deliverMeetingInvite, populatedMeetingResponse } from '../services/meetingNotifications.js';
+import { requiredString, optionalString, normalizeHttpUrl, parseFutureDate, parseObjectId, ValidationError } from '../utils/validation.js';
+import { AppError } from '../utils/validation.js';
 
 const router = express.Router();
 
@@ -69,4 +69,4 @@ router.post('/:id/notifications/retry', async (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;

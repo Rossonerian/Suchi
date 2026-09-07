@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { askAi } = require('../saas/ai');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { askAi } from '../saas/ai.js';
 
 const context = { userId: 'clerk_user_a', organizationId: 'org_a', organizationRole: 'member' };
 

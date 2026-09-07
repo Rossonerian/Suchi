@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { GoogleCalendarProvider, CALENDAR_SCOPES } = require('../integrations/google-calendar');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { GoogleCalendarProvider, CALENDAR_SCOPES } from '../integrations/google-calendar.js';
 
 test('Google Calendar adapter requests least-privilege scopes', () => {
   assert.deepEqual(CALENDAR_SCOPES, [

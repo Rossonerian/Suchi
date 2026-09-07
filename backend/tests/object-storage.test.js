@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { createUpload, completeUpload, createDownload, safeFileName } = require('../integrations/object-storage');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createUpload, completeUpload, createDownload, safeFileName } from '../integrations/object-storage.js';
 
 const context = { userId: 'clerk_a', organizationId: 'org_a', organizationRole: 'member' };
 const originalStorage = { bucket: process.env.S3_BUCKET, key: process.env.S3_ACCESS_KEY_ID, secret: process.env.S3_SECRET_ACCESS_KEY };

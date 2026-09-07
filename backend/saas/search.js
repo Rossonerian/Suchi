@@ -1,6 +1,6 @@
-const { z } = require('zod');
-const { AppError, parseSchema } = require('../utils/validation');
-const { resolveMembership } = require('./projects');
+import { z } from 'zod';
+import { AppError, parseSchema } from '../utils/validation.js';
+import { resolveMembership } from './projects.js';
 
 const searchInput = z.object({ q: z.string().trim().min(2).max(100), limit: z.coerce.number().int().min(1).max(25).optional().default(10) }).strict();
 
@@ -22,4 +22,4 @@ async function searchWorkspace(db, context, input) {
   };
 }
 
-module.exports = { searchInput, searchWorkspace };
+export { searchInput, searchWorkspace };

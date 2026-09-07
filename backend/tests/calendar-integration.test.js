@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { startGoogleCalendar, completeGoogleCalendar } = require('../saas/integrations');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { startGoogleCalendar, completeGoogleCalendar } from '../saas/integrations.js';
 
 const stateSecret = 'state-secret';
 const encryptionKey = Buffer.alloc(32, 9).toString('base64');

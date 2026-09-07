@@ -1,6 +1,6 @@
-const { z } = require('zod');
-const { AppError, parseSchema } = require('../utils/validation');
-const { resolveMembership } = require('./projects');
+import { z } from 'zod';
+import { AppError, parseSchema } from '../utils/validation.js';
+import { resolveMembership } from './projects.js';
 
 const commentInput = z.object({ body: z.string().trim().min(1).max(20_000) }).strict();
 
@@ -27,4 +27,4 @@ async function createComment(db, context, taskId, input) {
   });
 }
 
-module.exports = { commentInput, listComments, createComment };
+export { commentInput, listComments, createComment };

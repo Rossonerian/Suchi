@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { listMeetings, createMeeting, updateMeeting, cancelMeeting } = require('../saas/meetings');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { listMeetings, createMeeting, updateMeeting, cancelMeeting } from '../saas/meetings.js';
 
 const contextA = { userId: 'user_a', organizationId: 'org_a', organizationRole: 'member' };
 
@@ -11,7 +11,7 @@ function fakeDatabase() {
     { id: 'membership_b', organizationId: 'org_a', userId: 'local_user_b', role: 'member' },
   ];
   const db = {
-    userProfile: { findUnique: async ({ where }) => where.clerkUserId === 'user_a' ? { id: 'local_user_a' } : null },
+    userProfile: { findUnique: async ({ where }) => where.id === 'user_a' ? { id: 'local_user_a' } : null },
     organizationMembership: {
       findUnique: async ({ where }) => memberships.find((entry) => entry.organizationId === where.organizationId_userId.organizationId && entry.userId === where.organizationId_userId.userId) || null,
       findMany: async ({ where }) => memberships.filter((entry) => entry.organizationId === where.organizationId && where.id.in.includes(entry.id)),

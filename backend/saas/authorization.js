@@ -1,6 +1,7 @@
-const { AppError } = require('../utils/validation');
+import { AppError } from '../utils/validation.js';
+import { resolveMembership } from './projects.js';
 function getResolveMembership() {
-  return require('./projects').resolveMembership;
+  return resolveMembership;
 }
 
 const permissionRoles = {
@@ -31,4 +32,4 @@ async function assertPermission(db, context, permission, projectId) {
   return auth;
 }
 
-module.exports = { permissionRoles, authorizationContext, assertPermission };
+export { permissionRoles, authorizationContext, assertPermission };

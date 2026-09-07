@@ -39,9 +39,10 @@ enum TaskPriority {
 
 model UserProfile {
   id              String   @id @default(cuid())
-  clerkUserId     String   @unique
+  legacyExternalId String? @unique
   displayName     String
-  email           String?
+  email           String   @unique
+  emailVerified   Boolean  @default(false)
   avatarUrl       String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -51,15 +52,22 @@ model UserProfile {
   comments        Comment[] @relation("CommentAuthor")
   activityEvents  ActivityEvent[] @relation("ActivityActor")
   auditLogs       AuditLog[] @relation("AuditActor")
+  sessions        AuthSession[]
+  accounts        AuthAccount[]
+  invitations     OrganizationInvitation[]
+  authTeamMembers TeamMember[]
 }
 
 model Organization {
   id              String   @id @default(cuid())
-  clerkOrgId      String   @unique
+  legacyExternalId String? @unique
   name            String
   slug            String   @unique
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  logo            String?
+  metadata        String?
+  invitations     OrganizationInvitation[]
   settings        OrganizationSettings?
   memberships     OrganizationMembership[]
   teams           Team[]
@@ -109,8 +117,10 @@ model Team {
   id             String                  @id @default(cuid())
   organizationId String
   name           String
-  slug           String
+  slug           String?
   createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  memberCount    Int                     @default(0)
   organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   members        TeamMember[]
   projects       Project[]
@@ -122,11 +132,76 @@ model Team {
 model TeamMember {
   id           String                 @id @default(cuid())
   teamId       String
-  membershipId String
+  membershipId String?
+  userId       String
+  membershipKey String? @unique
+  createdAt    DateTime @default(now())
   team         Team                  @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  membership   OrganizationMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  membership   OrganizationMembership? @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  user         UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, membershipId])
+  @@unique([teamId, userId])
+}
+
+model AuthSession {
+  id String @id
+  expiresAt DateTime
+  token String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId String
+  activeOrganizationId String?
+  activeTeamId String?
+  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model AuthAccount {
+  id String @id
+  accountId String
+  providerId String
+  userId String
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  password String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model AuthVerification {
+  id String @id
+  identifier String
+  value String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([identifier])
+}
+
+model OrganizationInvitation {
+  id String @id
+  organizationId String
+  email String
+  role String?
+  teamId String?
+  status String @default("pending")
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  inviterId String
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter UserProfile @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  @@index([organizationId])
+  @@index([email])
 }
 
 model Project {

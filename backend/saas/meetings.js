@@ -1,6 +1,6 @@
-const { z } = require('zod');
-const { AppError } = require('../utils/validation');
-const { resolveMembership } = require('./projects');
+import { z } from 'zod';
+import { AppError } from '../utils/validation.js';
+import { resolveMembership } from './projects.js';
 
 const meetingFields = z.object({
   title: z.string().trim().min(1).max(240),
@@ -125,4 +125,4 @@ async function updateMeeting(db, context, meetingId, input) {
   });
 }
 
-module.exports = { meetingInput, updateMeetingInput, meetingFilterInput, parseMeetingInput, listMeetings, createMeeting, updateMeeting, cancelMeeting };
+export { meetingInput, updateMeetingInput, meetingFilterInput, parseMeetingInput, listMeetings, createMeeting, updateMeeting, cancelMeeting };

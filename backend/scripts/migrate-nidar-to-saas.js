@@ -5,15 +5,15 @@
  * an apply additionally requires ALLOW_SAAS_MIGRATION=1. It never creates a
  * database or changes production data by itself.
  */
-require('dotenv').config();
-const fs = require('node:fs');
-const mongoose = require('mongoose');
-const Member = require('../models/Member');
-const Team = require('../models/Team');
-const Task = require('../models/Task');
-const Plan = require('../models/Plan');
-const Meeting = require('../models/Meeting');
-const { getSaasDatabase } = require('../saas/database');
+import 'dotenv/config';
+import fs from 'node:fs';
+import mongoose from 'mongoose';
+import Member from '../models/Member.js';
+import Team from '../models/Team.js';
+import Task from '../models/Task.js';
+import Plan from '../models/Plan.js';
+import Meeting from '../models/Meeting.js';
+import { getSaasDatabase } from '../saas/database.js';
 
 const PROVIDER = 'nidar-mongo';
 
@@ -201,11 +201,11 @@ async function run(argv = process.argv.slice(2)) {
   return report({ ...output, result }, options.reportPath);
 }
 
-if (require.main === module) {
+if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').href) {
   run().catch((error) => {
     console.error(error.message);
     process.exitCode = 1;
   });
 }
 
-module.exports = { buildMigrationPlan, mapTaskStatus, parseArgs, run };
+export { buildMigrationPlan, mapTaskStatus, parseArgs, run };

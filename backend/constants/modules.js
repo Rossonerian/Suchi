@@ -19,4 +19,4 @@ const MODULES = [
   { id: 15, title: 'Integration: full end-to-end mission run', desc: 'Launch file bringing all 14 real modules up together; run and log a full mission. Depends on everything else. Target: Day 11-13.' },
 ];
 
-module.exports = { MODULES };
+export { MODULES };

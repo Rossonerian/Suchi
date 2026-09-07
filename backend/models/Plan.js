@@ -1,8 +1,8 @@
 // Single responsibility: schema for a team's uploaded plan/progress entry.
 // A plan is text content, an optional file link (Drive/Notion/etc.), tagged
 // to a phase and a date — this is the daily-accountability record per team.
-const mongoose = require('mongoose');
-const { PHASES } = require('../constants/phases');
+import mongoose from 'mongoose';
+import { PHASES } from '../constants/phases.js';
 
 const planSchema = new mongoose.Schema(
   {
@@ -17,4 +17,4 @@ const planSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Plan', planSchema);
+export default mongoose.model('Plan', planSchema);

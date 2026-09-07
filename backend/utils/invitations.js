@@ -1,7 +1,7 @@
-const crypto = require('node:crypto');
-const Invitation = require('../models/Invitation');
-const Member = require('../models/Member');
-const { hashToken, revokeAllSessions } = require('./auth');
+import crypto from 'node:crypto';
+import Invitation from '../models/Invitation.js';
+import Member from '../models/Member.js';
+import { hashToken, revokeAllSessions } from './auth.js';
 
 const INVITATION_TTL_DAYS = 7;
 
@@ -48,4 +48,4 @@ async function claimInvitation(token, passwordHash) {
   return { invitation, member };
 }
 
-module.exports = { INVITATION_TTL_DAYS, createInvitationToken, issueInvitation, claimInvitation };
+export { INVITATION_TTL_DAYS, createInvitationToken, issueInvitation, claimInvitation };

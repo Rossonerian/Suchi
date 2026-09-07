@@ -1,10 +1,10 @@
-const path = require('node:path');
-const crypto = require('node:crypto');
-const { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const { z } = require('zod');
-const { AppError, parseSchema } = require('../utils/validation');
-const { resolveMembership } = require('../saas/projects');
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { z } from 'zod';
+import { AppError, parseSchema } from '../utils/validation.js';
+import { resolveMembership } from '../saas/projects.js';
 
 const MAX_BYTES = 25 * 1024 * 1024;
 const allowedTypes = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'text/plain', 'text/csv']);
@@ -62,4 +62,4 @@ async function completeUpload({ db, context, attachmentId, s3Client = null }) {
   return db.attachment.update({ where: { id: attachment.id }, data: { status: 'uploaded', uploadedAt: new Date() } });
 }
 
-module.exports = { MAX_BYTES, allowedTypes, uploadInput, storageConfig, safeFileName, createUpload, completeUpload, createDownload };
+export { MAX_BYTES, allowedTypes, uploadInput, storageConfig, safeFileName, createUpload, completeUpload, createDownload };

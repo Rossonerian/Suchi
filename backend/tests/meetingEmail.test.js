@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { buildMeetingEmail } = require('../utils/meetingEmail');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { buildMeetingEmail } from '../utils/meetingEmail.js';
 
 test('buildMeetingEmail includes title, agenda, and every attendee', () => {
   const { subject, text, html } = buildMeetingEmail({

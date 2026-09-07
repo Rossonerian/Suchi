@@ -1,7 +1,7 @@
-const { z } = require('zod');
-const { AppError, parseSchema } = require('../utils/validation');
-const { resolveMembership } = require('./projects');
-const { assertPermission } = require('./authorization');
+import { z } from 'zod';
+import { AppError, parseSchema } from '../utils/validation.js';
+import { resolveMembership } from './projects.js';
+import { assertPermission } from './authorization.js';
 
 const taskStatus = z.enum(['backlog', 'todo', 'in_progress', 'blocked', 'review', 'done', 'cancelled']);
 const taskPriority = z.enum(['none', 'low', 'medium', 'high', 'urgent']);
@@ -120,4 +120,4 @@ async function deleteTask(db, context, taskId) {
   return null;
 }
 
-module.exports = { createTaskInput, updateTaskInput, listTasks, getTask, createTask, updateTask, deleteTask };
+export { createTaskInput, updateTaskInput, listTasks, getTask, createTask, updateTask, deleteTask };

@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "description": "Backend API for the NIDAR AirMouse mission dashboard",
   "main": "server.js",
-  "type": "commonjs",
+  "type": "module",
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
+    "start": "node saas/server.js",
+    "dev": "node --watch saas/server.js",
+    "start:legacy": "node server.js",
     "test": "NODE_ENV=test node --test tests/*.test.js",
     "migrate:saas": "node scripts/migrate-nidar-to-saas.js",
     "create-admin": "node scripts/create-admin.js",
@@ -18,9 +19,12 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",
     "@aws-sdk/s3-request-presigner": "^3.1127.0",
+    "@better-auth/expo": "1.7.3",
+    "@better-auth/prisma-adapter": "1.7.3",
     "@clerk/express": "^2.1.66",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "better-auth": "1.7.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.22.2",

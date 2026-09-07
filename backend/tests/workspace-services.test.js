@@ -1,8 +1,8 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { listNotifications, markNotificationRead } = require('../saas/notifications');
-const { searchWorkspace } = require('../saas/search');
-const { listComments, createComment } = require('../saas/comments');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { listNotifications, markNotificationRead } from '../saas/notifications.js';
+import { searchWorkspace } from '../saas/search.js';
+import { listComments, createComment } from '../saas/comments.js';
 
 const context = { userId: 'clerk_a', organizationId: 'org_a', organizationRole: 'member' };
 

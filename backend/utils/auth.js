@@ -1,6 +1,6 @@
-const crypto = require('node:crypto');
-const Session = require('../models/Session');
-const { AppError } = require('./validation');
+import crypto from 'node:crypto';
+import Session from '../models/Session.js';
+import { AppError } from './validation.js';
 
 const SESSION_COOKIE = 'nidar_session';
 const SESSION_TTL_MS = Math.max(60 * 60 * 1000, Number(process.env.SESSION_TTL_HOURS || 168) * 60 * 60 * 1000);
@@ -115,7 +115,7 @@ function assertOwnTeam(member, teamId) {
   }
 }
 
-module.exports = {
+export {
   SESSION_COOKIE,
   hashToken,
   parseCookies,

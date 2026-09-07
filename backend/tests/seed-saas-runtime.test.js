@@ -1,10 +1,10 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const {
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
   buildRuntimeSeedPlan,
   isLoopbackDatabaseUrl,
   validateRuntimeSeedConfig,
-} = require('../scripts/seed-saas-runtime');
+} from '../scripts/seed-saas-runtime.js';
 
 const ids = {
   userA: 'user_a_real_clerk_id',

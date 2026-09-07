@@ -36,4 +36,4 @@ async function runDeadlineSweep(db, now = new Date()) {
   return { scanned: tasks.length, generated: notifications.length };
 }
 
-module.exports = { buildDeadlineNotifications, runDeadlineSweep };
+export { buildDeadlineNotifications, runDeadlineSweep };

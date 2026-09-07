@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { encryptSecret, decryptSecret } = require('../integrations/crypto');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { encryptSecret, decryptSecret } from '../integrations/crypto.js';
 
 const key = Buffer.alloc(32, 7).toString('base64');
 

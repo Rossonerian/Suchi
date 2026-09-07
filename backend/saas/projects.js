@@ -1,6 +1,6 @@
-const { z } = require('zod');
-const { AppError, parseSchema } = require('../utils/validation');
-const { assertPermission } = require('./authorization');
+import { z } from 'zod';
+import { AppError, parseSchema } from '../utils/validation.js';
+import { assertPermission } from './authorization.js';
 
 const createProjectInput = z.object({
   name: z.string().trim().min(1).max(160),
@@ -21,7 +21,7 @@ async function resolveMembership(db, context) {
   if (!context?.userId || !context.organizationId) {
     throw new AppError('An authenticated organization context is required.', 401, 'UNAUTHENTICATED');
   }
-  const user = await db.userProfile.findUnique({ where: { clerkUserId: context.userId } });
+  const user = await db.userProfile.findUnique({ where: { id: context.userId } });
   if (!user) throw new AppError('Organization membership is not provisioned.', 403, 'FORBIDDEN');
   const membership = await db.organizationMembership.findUnique({
     where: { organizationId_userId: { organizationId: context.organizationId, userId: user.id } },
@@ -92,4 +92,4 @@ async function deleteProject(db, context, projectId) {
   return null;
 }
 
-module.exports = { createProjectInput, updateProjectInput, projectSlug, resolveMembership, listProjects, getProject, createProject, updateProject, deleteProject };
+export { createProjectInput, updateProjectInput, projectSlug, resolveMembership, listProjects, getProject, createProject, updateProject, deleteProject };

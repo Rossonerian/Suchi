@@ -1,7 +1,7 @@
 // Single responsibility: schema for a team member. Legacy documents may not
 // yet have a password/status/role, but they cannot authenticate until an
 // administrator issues an invitation or bootstraps access.
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const memberSchema = new mongoose.Schema(
   {
@@ -24,4 +24,4 @@ memberSchema.pre('validate', function setNameLower(next) {
   next();
 });
 
-module.exports = mongoose.model('Member', memberSchema);
+export default mongoose.model('Member', memberSchema);

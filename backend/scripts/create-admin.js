@@ -1,13 +1,13 @@
-const readline = require('node:readline');
-const dotenv = require('dotenv');
-const mongoose = require('mongoose');
+import readline from 'node:readline';
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 dotenv.config();
-const Team = require('../models/Team');
-const Member = require('../models/Member');
-const { connectDB } = require('../config/db');
-const { parseEmail } = require('../utils/validation');
-const { hashPassword } = require('../utils/passwords');
-const { revokeAllSessions } = require('../utils/auth');
+import Team from '../models/Team.js';
+import Member from '../models/Member.js';
+import { connectDB } from '../config/db.js';
+import { parseEmail } from '../utils/validation.js';
+import { hashPassword } from '../utils/passwords.js';
+import { revokeAllSessions } from '../utils/auth.js';
 
 function question(rl, prompt) { return new Promise((resolve) => rl.question(prompt, resolve)); }
 
@@ -68,6 +68,6 @@ async function main() {
   }
 }
 
-if (require.main === module) connectDB().then(main).catch(() => { console.error('[create-admin] failed'); process.exitCode = 1; });
+if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').href) connectDB().then(main).catch(() => { console.error('[create-admin] failed'); process.exitCode = 1; });
 
-module.exports = { main, promoteExistingAdmin };
+export { main, promoteExistingAdmin };

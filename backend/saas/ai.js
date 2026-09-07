@@ -1,11 +1,11 @@
-const crypto = require('node:crypto');
-const { z } = require('zod');
-const { AppError, parseSchema } = require('../utils/validation');
-const { resolveMembership } = require('./projects');
-const { createTask } = require('./tasks');
-const { OpenRouterClient, modelFor } = require('../ai/openrouter');
-const { getToolDefinitions, executeToolCall } = require('../ai/tools');
-const { createConfirmationToken, verifyConfirmationToken } = require('../ai/confirmation');
+import crypto from 'node:crypto';
+import { z } from 'zod';
+import { AppError, parseSchema } from '../utils/validation.js';
+import { resolveMembership } from './projects.js';
+import { createTask } from './tasks.js';
+import { OpenRouterClient, modelFor } from '../ai/openrouter.js';
+import { getToolDefinitions, executeToolCall } from '../ai/tools.js';
+import { createConfirmationToken, verifyConfirmationToken } from '../ai/confirmation.js';
 
 const askInput = z.object({
   question: z.string().trim().min(1).max(4_000),
@@ -168,4 +168,4 @@ async function confirmAiWrite({ db, context, input }) {
   return { task: result };
 }
 
-module.exports = { askInput, confirmationInput, askAi, confirmAiWrite, SYSTEM_PROMPT };
+export { askInput, confirmationInput, askAi, confirmAiWrite, SYSTEM_PROMPT };

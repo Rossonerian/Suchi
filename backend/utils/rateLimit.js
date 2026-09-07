@@ -5,4 +5,4 @@ function rateLimitHandler(req, res) { // eslint-disable-line no-unused-vars
   });
 }
 
-module.exports = { rateLimitHandler };
+export { rateLimitHandler };

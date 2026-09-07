@@ -1,6 +1,6 @@
 // Single responsibility: own the nodemailer transporter and expose one
 // sendMail function. Uses Gmail SMTP with an app password.
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 let transporter = null;
 
@@ -34,4 +34,4 @@ async function sendMail({ to, subject, text, html }) {
   });
 }
 
-module.exports = { sendMail };
+export { sendMail };

@@ -1,9 +1,9 @@
 // Single responsibility: list members (used to populate assignee pickers)
 // and let a member update their own profile email. Role/access changes belong
 // to the administrator route so a profile request cannot escalate privileges.
-const express = require('express');
-const Member = require('../models/Member');
-const { parseObjectId, parseEmail, AppError, ValidationError } = require('../utils/validation');
+import express from 'express';
+import Member from '../models/Member.js';
+import { parseObjectId, parseEmail, AppError, ValidationError } from '../utils/validation.js';
 
 const router = express.Router();
 
@@ -47,4 +47,4 @@ router.patch('/:id', async (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;

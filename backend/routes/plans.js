@@ -1,11 +1,11 @@
 // Single responsibility: CRUD for team plan/progress entries.
-const express = require('express');
-const Plan = require('../models/Plan');
-const { PHASES } = require('../constants/phases');
-const Team = require('../models/Team');
-const Member = require('../models/Member');
-const { requiredString, optionalString, normalizeHttpUrl, parseDate, parseObjectId, optionalObjectId, ValidationError } = require('../utils/validation');
-const { assertOwnTeam } = require('../utils/auth');
+import express from 'express';
+import Plan from '../models/Plan.js';
+import { PHASES } from '../constants/phases.js';
+import Team from '../models/Team.js';
+import Member from '../models/Member.js';
+import { requiredString, optionalString, normalizeHttpUrl, parseDate, parseObjectId, optionalObjectId, ValidationError } from '../utils/validation.js';
+import { assertOwnTeam } from '../utils/auth.js';
 
 const router = express.Router();
 
@@ -82,4 +82,4 @@ router.delete('/:id', async (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;

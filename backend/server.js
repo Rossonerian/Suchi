@@ -1,8 +1,8 @@
 // Entry point: wires up Express, connects to MongoDB, mounts routes.
-require('dotenv').config();
-const { connectDB } = require('./config/db');
-const { seedTeams } = require('./seed');
-const app = require('./app');
+import 'dotenv/config';
+import { connectDB } from './config/db.js';
+import { seedTeams } from './seed.js';
+import app from './app.js';
 
 const PORT = process.env.PORT || 5000;
 

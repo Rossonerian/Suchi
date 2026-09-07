@@ -23,4 +23,4 @@ function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-va
   return res.status(500).json({ error: 'Something went wrong. Please try again.', code: 'INTERNAL_ERROR' });
 }
 
-module.exports = { errorHandler };
+export { errorHandler };

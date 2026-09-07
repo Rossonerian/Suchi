@@ -1,6 +1,6 @@
 // Single responsibility: schema for a sub-team (Core Technical, Design & CAD, Social).
-const mongoose = require('mongoose');
-const { TEAM_KEYS } = require('../constants/teams');
+import mongoose from 'mongoose';
+import { TEAM_KEYS } from '../constants/teams.js';
 
 const teamSchema = new mongoose.Schema(
   {
@@ -11,4 +11,4 @@ const teamSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Team', teamSchema);
+export default mongoose.model('Team', teamSchema);

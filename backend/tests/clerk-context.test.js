@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { organizationContextFromClerkAuth } = require('../utils/clerk');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { organizationContextFromClerkAuth } from '../utils/clerk.js';
 
 test('Clerk claims become an explicit organization context', () => {
   assert.deepEqual(

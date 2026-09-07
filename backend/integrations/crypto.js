@@ -1,4 +1,4 @@
-const crypto = require('node:crypto');
+import crypto from 'node:crypto';
 
 function decodeKey(value = process.env.INTEGRATION_ENCRYPTION_KEY) {
   if (!value) {
@@ -40,4 +40,4 @@ function decryptSecret(payload, keyInput) {
   }
 }
 
-module.exports = { decodeKey, encryptSecret, decryptSecret };
+export { decodeKey, encryptSecret, decryptSecret };

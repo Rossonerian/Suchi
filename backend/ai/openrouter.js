@@ -46,4 +46,4 @@ class OpenRouterClient {
   }
 }
 
-module.exports = { DEFAULT_MODELS, modelFor, OpenRouterClient };
+export { DEFAULT_MODELS, modelFor, OpenRouterClient };

@@ -1,5 +1,5 @@
 // Single responsibility: schema for a scheduled meeting.
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const meetingSchema = new mongoose.Schema(
   {
@@ -16,4 +16,4 @@ const meetingSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Meeting', meetingSchema);
+export default mongoose.model('Meeting', meetingSchema);

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const invitationSchema = new mongoose.Schema({
   email: { type: String, required: true, trim: true, lowercase: true },
@@ -13,4 +13,4 @@ const invitationSchema = new mongoose.Schema({
 
 invitationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-module.exports = mongoose.model('Invitation', invitationSchema);
+export default mongoose.model('Invitation', invitationSchema);

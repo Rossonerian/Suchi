@@ -1,6 +1,6 @@
 // Server-side opaque sessions. Only a SHA-256 digest is persisted; the raw
 // value exists solely in the HttpOnly browser cookie.
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const sessionSchema = new mongoose.Schema({
   tokenHash: { type: String, required: true, unique: true, index: true },
@@ -13,4 +13,4 @@ const sessionSchema = new mongoose.Schema({
 // an expired session cannot remain usable while the TTL monitor is pending.
 sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-module.exports = mongoose.model('Session', sessionSchema);
+export default mongoose.model('Session', sessionSchema);

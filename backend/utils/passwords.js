@@ -1,6 +1,6 @@
-const crypto = require('node:crypto');
-const { promisify } = require('node:util');
-const { ValidationError } = require('./validation');
+import crypto from 'node:crypto';
+import { promisify } from 'node:util';
+import { ValidationError } from './validation.js';
 
 const scrypt = promisify(crypto.scrypt);
 const MIN_PASSWORD_LENGTH = 10;
@@ -41,4 +41,4 @@ async function verifyPassword(password, encoded) {
   }
 }
 
-module.exports = { MIN_PASSWORD_LENGTH, assertPassword, hashPassword, verifyPassword };
+export { MIN_PASSWORD_LENGTH, assertPassword, hashPassword, verifyPassword };

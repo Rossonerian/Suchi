@@ -1,14 +1,14 @@
-const express = require('express');
-const Stripe = require('stripe');
-const { requireClerkOrganization } = require('../utils/clerk');
-const { getSaasDatabase } = require('../saas/database');
-const { getBillingStatus, applyStripeEvent } = require('../saas/billing');
-const { AppError } = require('../utils/validation');
+import express from 'express';
+import Stripe from 'stripe';
+import { requireOrganization } from '../saas/auth-context.js';
+import { getSaasDatabase } from '../saas/database.js';
+import { getBillingStatus, applyStripeEvent } from '../saas/billing.js';
+import { AppError } from '../utils/validation.js';
 
 const router = express.Router();
 const stripeWebhookRouter = express.Router();
 
-router.get('/status', requireClerkOrganization, async (req, res, next) => {
+router.get('/status', requireOrganization, async (req, res, next) => {
   try { return res.json(await getBillingStatus(getSaasDatabase(), req.organizationContext)); } catch (error) { return next(error); }
 });
 
@@ -26,4 +26,4 @@ stripeWebhookRouter.post('/', express.raw({ type: 'application/json', limit: '25
   }
 });
 
-module.exports = { router, stripeWebhookRouter };
+export { router, stripeWebhookRouter };

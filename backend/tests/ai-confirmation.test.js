@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { createConfirmationToken, verifyConfirmationToken } = require('../ai/confirmation');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createConfirmationToken, verifyConfirmationToken } from '../ai/confirmation.js';
 
 test('AI confirmation tokens are short-lived and tamper resistant', () => {
   const token = createConfirmationToken({ operation: 'create_task', organizationId: 'org_a' }, { secret: 'test-secret', now: 1_000_000, ttlSeconds: 60 });

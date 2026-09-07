@@ -1,6 +1,6 @@
-const Meeting = require('../models/Meeting');
-const { sendMail } = require('./mailer');
-const { buildMeetingEmail } = require('../utils/meetingEmail');
+import Meeting from '../models/Meeting.js';
+import { sendMail } from './mailer.js';
+import { buildMeetingEmail } from '../utils/meetingEmail.js';
 
 async function populateMeeting(meeting) {
   return meeting.populate([
@@ -47,4 +47,4 @@ async function populatedMeetingResponse(meeting) {
   return populated;
 }
 
-module.exports = { deliverMeetingInvite, populatedMeetingResponse };
+export { deliverMeetingInvite, populatedMeetingResponse };

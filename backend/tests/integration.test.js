@@ -1,19 +1,19 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const mongoose = require('mongoose');
-const app = require('../app');
-const Team = require('../models/Team');
-const Member = require('../models/Member');
-const Invitation = require('../models/Invitation');
-const Task = require('../models/Task');
-const Plan = require('../models/Plan');
-const Meeting = require('../models/Meeting');
-const Session = require('../models/Session');
-const { hashToken } = require('../utils/auth');
-const { hashPassword } = require('../utils/passwords');
-const { issueInvitation } = require('../utils/invitations');
-const { promoteExistingAdmin } = require('../scripts/create-admin');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import mongoose from 'mongoose';
+import app from '../app.js';
+import Team from '../models/Team.js';
+import Member from '../models/Member.js';
+import Invitation from '../models/Invitation.js';
+import Task from '../models/Task.js';
+import Plan from '../models/Plan.js';
+import Meeting from '../models/Meeting.js';
+import Session from '../models/Session.js';
+import { hashToken } from '../utils/auth.js';
+import { hashPassword } from '../utils/passwords.js';
+import { issueInvitation } from '../utils/invitations.js';
+import { promoteExistingAdmin } from '../scripts/create-admin.js';
 
 let mongo;
 let server;
@@ -93,12 +93,12 @@ test('health and security headers are available without a database session', asy
   assert.ok(response.headers.get('content-security-policy') || response.headers.get('strict-transport-security'));
 });
 
-test('SaaS project API stays unavailable until Clerk is explicitly configured', async () => {
+test('SaaS project API stays unavailable without its authoritative database', async () => {
   const response = await request('/api/v1/projects');
   assert.equal(response.status, 503);
   assert.deepEqual(await response.json(), {
-    error: 'Clerk authentication is not configured.',
-    code: 'AUTH_PROVIDER_UNAVAILABLE',
+    error: 'The SaaS database is not configured.',
+    code: 'SAAS_DATABASE_UNAVAILABLE',
   });
 });
 

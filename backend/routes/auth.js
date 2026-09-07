@@ -1,12 +1,12 @@
-const express = require('express');
-const rateLimit = require('express-rate-limit');
-const Member = require('../models/Member');
-const Invitation = require('../models/Invitation');
-const { requiredString, parseEmail, AppError } = require('../utils/validation');
-const { hashToken, issueSession, requireAuth, revokeSession, clearSession, publicMember } = require('../utils/auth');
-const { hashPassword, verifyPassword } = require('../utils/passwords');
-const { claimInvitation } = require('../utils/invitations');
-const { rateLimitHandler } = require('../utils/rateLimit');
+import express from 'express';
+import rateLimit from 'express-rate-limit';
+import Member from '../models/Member.js';
+import Invitation from '../models/Invitation.js';
+import { requiredString, parseEmail, AppError } from '../utils/validation.js';
+import { hashToken, issueSession, requireAuth, revokeSession, clearSession, publicMember } from '../utils/auth.js';
+import { hashPassword, verifyPassword } from '../utils/passwords.js';
+import { claimInvitation } from '../utils/invitations.js';
+import { rateLimitHandler } from '../utils/rateLimit.js';
 
 const router = express.Router();
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false, handler: rateLimitHandler, skipSuccessfulRequests: true, skip: () => process.env.NODE_ENV === 'test' });
@@ -52,4 +52,4 @@ router.post('/logout', async (req, res, next) => {
   try { await revokeSession(req); clearSession(res); res.status(204).send(); } catch (err) { next(err); }
 });
 
-module.exports = router;
+export default router;

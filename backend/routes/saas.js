@@ -1,12 +1,12 @@
-const express = require('express');
-const { requireClerkOrganization } = require('../utils/clerk');
-const { getSaasDatabase } = require('../saas/database');
-const { listProjects, getProject, createProject, updateProject, deleteProject } = require('../saas/projects');
-const { listTasks, getTask, createTask, updateTask, deleteTask } = require('../saas/tasks');
-const { listMeetings, createMeeting, updateMeeting, cancelMeeting } = require('../saas/meetings');
+import express from 'express';
+import { requireOrganization } from '../saas/auth-context.js';
+import { getSaasDatabase } from '../saas/database.js';
+import { listProjects, getProject, createProject, updateProject, deleteProject } from '../saas/projects.js';
+import { listTasks, getTask, createTask, updateTask, deleteTask } from '../saas/tasks.js';
+import { listMeetings, createMeeting, updateMeeting, cancelMeeting } from '../saas/meetings.js';
 
 const router = express.Router();
-router.use(requireClerkOrganization);
+router.use(requireOrganization);
 
 router.get('/projects', async (req, res, next) => {
   try {
@@ -141,4 +141,4 @@ router.patch('/meetings/:meetingId', async (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;

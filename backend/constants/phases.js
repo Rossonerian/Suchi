@@ -2,4 +2,4 @@
 // The project moves through these in order as work progresses.
 const PHASES = ['simulation', 'hardware-integration', 'testing', 'final'];
 
-module.exports = { PHASES };
+export { PHASES };

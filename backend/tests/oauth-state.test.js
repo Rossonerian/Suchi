@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { createOAuthState, verifyOAuthState } = require('../integrations/oauth-state');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createOAuthState, verifyOAuthState } from '../integrations/oauth-state.js';
 
 const secret = 'state-secret-for-tests';
 

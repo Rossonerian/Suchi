@@ -1,11 +1,11 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const {
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
   ValidationError,
   normalizeHttpUrl,
   parseObjectId,
   parseFutureDate,
-} = require('../utils/validation');
+} from '../utils/validation.js';
 
 test('normalizeHttpUrl accepts and normalizes HTTP(S) links only', () => {
   assert.equal(normalizeHttpUrl(' https://example.com/brief '), 'https://example.com/brief');

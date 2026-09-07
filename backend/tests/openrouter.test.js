@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { OpenRouterClient, modelFor } = require('../ai/openrouter');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { OpenRouterClient, modelFor } from '../ai/openrouter.js';
 
 test('OpenRouter client requires a server-side API key', () => {
   assert.throws(() => new OpenRouterClient({ apiKey: '' }), { code: 'AI_PROVIDER_UNAVAILABLE' });

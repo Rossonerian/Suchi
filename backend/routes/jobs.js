@@ -1,6 +1,6 @@
-const express = require('express');
-const { serve } = require('inngest/express');
-const { inngest, functions } = require('../jobs/inngest');
+import express from 'express';
+import { serve } from 'inngest/express';
+import { inngest, functions } from '../jobs/inngest.js';
 
 const router = express.Router();
 
@@ -11,4 +11,4 @@ router.use((req, res, next) => {
   return serve({ client: inngest, functions })(req, res, next);
 });
 
-module.exports = router;
+export default router;

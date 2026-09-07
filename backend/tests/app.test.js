@@ -1,7 +1,7 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { once } = require('node:events');
-const app = require('../app');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { once } from 'node:events';
+import app from '../app.js';
 
 async function withServer(run) {
   const server = app.listen(0);

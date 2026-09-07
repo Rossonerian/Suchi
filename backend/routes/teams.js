@@ -1,9 +1,9 @@
 // Single responsibility: read-only endpoints for team + progress data.
-const express = require('express');
-const Team = require('../models/Team');
-const Task = require('../models/Task');
-const Member = require('../models/Member');
-const { computeProgress } = require('../utils/progress');
+import express from 'express';
+import Team from '../models/Team.js';
+import Task from '../models/Task.js';
+import Member from '../models/Member.js';
+import { computeProgress } from '../utils/progress.js';
 
 const router = express.Router();
 
@@ -34,4 +34,4 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;

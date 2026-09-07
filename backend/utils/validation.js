@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 
 class AppError extends Error {
   constructor(message, status = 500, code = 'INTERNAL_ERROR', details) {
@@ -33,7 +32,7 @@ function optionalString(value, field, { max = 5000 } = {}) {
 }
 
 function parseObjectId(value, field) {
-  if (typeof value !== 'string' || !mongoose.isValidObjectId(value)) {
+  if (typeof value !== 'string' || !/^[a-fA-F0-9]{24}$/.test(value)) {
     throw new ValidationError(`${field} must be a valid ID.`);
   }
   return value;
@@ -81,7 +80,7 @@ function parseSchema(schema, value, message = 'Request input is invalid.') {
   }
 }
 
-module.exports = {
+export {
   AppError, ValidationError, requiredString, optionalString, parseObjectId,
   optionalObjectId, normalizeHttpUrl, parseDate, parseFutureDate, parseEmail, parseSchema,
 };

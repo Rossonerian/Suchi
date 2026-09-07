@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { computeProgress } = require('../utils/progress');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { computeProgress } from '../utils/progress.js';
 
 test('computeProgress returns zeros for an empty task list', () => {
   const result = computeProgress([]);

@@ -1,5 +1,5 @@
 // Single responsibility: schema for a task tracked on the dashboard.
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const STATUSES = ['todo', 'in-progress', 'blocked', 'done'];
 
@@ -18,5 +18,5 @@ const taskSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Task', taskSchema);
-module.exports.STATUSES = STATUSES;
+export default mongoose.model('Task', taskSchema);
+export { STATUSES as STATUSES };

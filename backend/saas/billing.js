@@ -1,5 +1,5 @@
-const { AppError } = require('../utils/validation');
-const { resolveMembership } = require('./projects');
+import { AppError } from '../utils/validation.js';
+import { resolveMembership } from './projects.js';
 
 const PLAN_ENTITLEMENTS = {
   free: { members: 5, projects: 3, ai_requests_month: 25, storage_bytes: 100 * 1024 * 1024 },
@@ -72,4 +72,4 @@ async function applyStripeEvent(db, event) {
   });
 }
 
-module.exports = { PLAN_ENTITLEMENTS, entitlementsFor, getBillingStatus, applyStripeEvent };
+export { PLAN_ENTITLEMENTS, entitlementsFor, getBillingStatus, applyStripeEvent };

@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { listProjects, getProject, createProject } = require('../saas/projects');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { listProjects, getProject, createProject } from '../saas/projects.js';
 
 const contextA = { userId: 'user_a', organizationId: 'org_a', organizationRole: 'member' };
 
@@ -13,7 +13,7 @@ function fakeDatabase() {
   const memberships = { 'org_a:local_user_a': { id: 'membership_a', role: 'member' } };
   const db = {
     userProfile: {
-      findUnique: async ({ where }) => users[where.clerkUserId] || null,
+      findUnique: async ({ where }) => users[where.id] || null,
     },
     organizationMembership: {
       findUnique: async ({ where }) => memberships[`${where.organizationId_userId.organizationId}:${where.organizationId_userId.userId}`] || null,

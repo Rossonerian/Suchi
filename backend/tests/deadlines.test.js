@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { buildDeadlineNotifications, runDeadlineSweep } = require('../jobs/deadlines');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { buildDeadlineNotifications, runDeadlineSweep } from '../jobs/deadlines.js';
 
 test('deadline notifications include only incomplete tasks due soon or overdue', () => {
   const now = new Date('2099-01-01T12:00:00.000Z');

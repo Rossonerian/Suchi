@@ -1,5 +1,5 @@
-const { clerkMiddleware, getAuth } = require('@clerk/express');
-const { AppError } = require('./validation');
+import { clerkMiddleware, getAuth } from '@clerk/express';
+import { AppError } from './validation.js';
 
 // The legacy session remains the compatibility path until Clerk is explicitly
 // enabled. A secret key alone is not enough to switch production traffic over;
@@ -69,7 +69,7 @@ function requireClerkUser(req, res, next) {
   }
 }
 
-module.exports = {
+export {
   isClerkConfigured,
   organizationRoleFromClerkRole,
   organizationContextFromClerkAuth,

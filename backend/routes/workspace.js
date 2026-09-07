@@ -1,12 +1,12 @@
-const express = require('express');
-const { requireClerkOrganization } = require('../utils/clerk');
-const { getSaasDatabase } = require('../saas/database');
-const { listNotifications, markNotificationRead } = require('../saas/notifications');
-const { searchWorkspace } = require('../saas/search');
-const { listComments, createComment } = require('../saas/comments');
+import express from 'express';
+import { requireOrganization } from '../saas/auth-context.js';
+import { getSaasDatabase } from '../saas/database.js';
+import { listNotifications, markNotificationRead } from '../saas/notifications.js';
+import { searchWorkspace } from '../saas/search.js';
+import { listComments, createComment } from '../saas/comments.js';
 
 const router = express.Router();
-router.use(requireClerkOrganization);
+router.use(requireOrganization);
 
 router.get('/notifications', async (req, res, next) => {
   try { return res.json({ notifications: await listNotifications(getSaasDatabase(), req.organizationContext, req.query) }); } catch (error) { return next(error); }
@@ -28,4 +28,4 @@ router.post('/tasks/:taskId/comments', async (req, res, next) => {
   try { return res.status(201).json({ comment: await createComment(getSaasDatabase(), req.organizationContext, req.params.taskId, req.body) }); } catch (error) { return next(error); }
 });
 
-module.exports = router;
+export default router;

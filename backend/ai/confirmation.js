@@ -1,5 +1,5 @@
-const crypto = require('node:crypto');
-const { AppError } = require('../utils/validation');
+import crypto from 'node:crypto';
+import { AppError } from '../utils/validation.js';
 
 function getSecret(explicitSecret) {
   const secret = explicitSecret || process.env.AI_CONFIRMATION_SECRET || process.env.SESSION_SECRET;
@@ -43,4 +43,4 @@ function verifyConfirmationToken(token, { secret, now = Date.now() } = {}) {
   return payload;
 }
 
-module.exports = { createConfirmationToken, verifyConfirmationToken };
+export { createConfirmationToken, verifyConfirmationToken };

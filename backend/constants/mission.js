@@ -2,4 +2,4 @@
 // that needs to report time remaining.
 const MISSION_DEADLINE = new Date('2026-12-15T23:59:59+05:30'); // IST
 
-module.exports = { MISSION_DEADLINE };
+export { MISSION_DEADLINE };

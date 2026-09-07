@@ -1,6 +1,6 @@
-const { AppError } = require('../utils/validation');
-const { createOAuthState, verifyOAuthState } = require('../integrations/oauth-state');
-const { encryptSecret } = require('../integrations/crypto');
+import { AppError } from '../utils/validation.js';
+import { createOAuthState, verifyOAuthState } from '../integrations/oauth-state.js';
+import { encryptSecret } from '../integrations/crypto.js';
 
 function startGoogleCalendar({ provider, context, stateSecret = process.env.INTEGRATION_STATE_SECRET }) {
   if (!context?.organizationId || !context.userId) throw new AppError('An authenticated organization context is required.', 401, 'UNAUTHENTICATED');
@@ -30,4 +30,4 @@ async function completeGoogleCalendar({ db, provider, state, code, stateSecret =
   return { connectionId: connection.id, calendars: calendars.items || [] };
 }
 
-module.exports = { startGoogleCalendar, completeGoogleCalendar };
+export { startGoogleCalendar, completeGoogleCalendar };

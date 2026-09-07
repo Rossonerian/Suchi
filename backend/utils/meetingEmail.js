@@ -49,4 +49,4 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-module.exports = { buildMeetingEmail, formatDateTime };
+export { buildMeetingEmail, formatDateTime };

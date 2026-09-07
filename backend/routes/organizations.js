@@ -1,12 +1,13 @@
-const express = require('express');
-const { clerkClient } = require('@clerk/express');
-const { requireClerkUser, requireClerkOrganization } = require('../utils/clerk');
-const { getSaasDatabase } = require('../saas/database');
-const { listOrganizations, provisionOrganization } = require('../saas/organizations');
-const { listOrganizationMembers, inviteOrganizationMember } = require('../saas/members');
+import express from 'express';
+import { fromNodeHeaders } from 'better-auth/node';
+import { getAuth } from '../saas/auth.js';
+import { requireAuthenticatedUser, requireOrganization } from '../saas/auth-context.js';
+import { getSaasDatabase } from '../saas/database.js';
+import { listOrganizations, provisionOrganization } from '../saas/organizations.js';
+import { listOrganizationMembers, inviteOrganizationMember } from '../saas/members.js';
 
 const router = express.Router();
-router.use(requireClerkUser);
+router.use(requireAuthenticatedUser);
 
 router.get('/', async (req, res, next) => {
   try {
@@ -20,9 +21,8 @@ router.get('/', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const organization = await provisionOrganization(
-      getSaasDatabase(),
-      clerkClient,
-      req.userContext,
+      getAuth(),
+      fromNodeHeaders(req.headers),
       req.body,
     );
     return res.status(201).json({ organization });
@@ -31,12 +31,12 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-router.get('/members', requireClerkOrganization, async (req, res, next) => {
-  try { return res.json({ members: await listOrganizationMembers(clerkClient, req.organizationContext) }); } catch (error) { return next(error); }
+router.get('/members', requireOrganization, async (req, res, next) => {
+  try { return res.json({ members: await listOrganizationMembers(getSaasDatabase(), req.organizationContext) }); } catch (error) { return next(error); }
 });
 
-router.post('/members/invitations', requireClerkOrganization, async (req, res, next) => {
-  try { return res.status(201).json({ invitation: await inviteOrganizationMember(clerkClient, req.organizationContext, req.body) }); } catch (error) { return next(error); }
+router.post('/members/invitations', requireOrganization, async (req, res, next) => {
+  try { return res.status(201).json({ invitation: await inviteOrganizationMember(getAuth(), req.organizationContext, req.body, fromNodeHeaders(req.headers)) }); } catch (error) { return next(error); }
 });
 
-module.exports = router;
+export default router;

@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { entitlementsFor, getBillingStatus, applyStripeEvent } = require('../saas/billing');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { entitlementsFor, getBillingStatus, applyStripeEvent } from '../saas/billing.js';
 
 test('billing entitlements are data-driven with a safe free-plan fallback', () => {
   assert.equal(entitlementsFor('pro').projects, 50);

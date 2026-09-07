@@ -1,7 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { Pool } = require('pg');
-const { AppError } = require('../utils/validation');
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
+import { AppError } from '../utils/validation.js';
 
 let client;
 
@@ -19,4 +19,4 @@ function resetSaasDatabaseForTests() {
   client = undefined;
 }
 
-module.exports = { getSaasDatabase, resetSaasDatabaseForTests };
+export { getSaasDatabase, resetSaasDatabaseForTests };

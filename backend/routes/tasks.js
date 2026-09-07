@@ -1,12 +1,12 @@
 // Single responsibility: CRUD for tasks.
-const express = require('express');
-const Task = require('../models/Task');
-const Team = require('../models/Team');
-const Member = require('../models/Member');
-const { STATUSES } = require('../models/Task');
-const { requiredString, optionalString, parseObjectId, optionalObjectId, parseDate, ValidationError } = require('../utils/validation');
-const { MODULES } = require('../constants/modules');
-const { assertOwnTeam } = require('../utils/auth');
+import express from 'express';
+import Task from '../models/Task.js';
+import Team from '../models/Team.js';
+import Member from '../models/Member.js';
+import { STATUSES } from '../models/Task.js';
+import { requiredString, optionalString, parseObjectId, optionalObjectId, parseDate, ValidationError } from '../utils/validation.js';
+import { MODULES } from '../constants/modules.js';
+import { assertOwnTeam } from '../utils/auth.js';
 
 const router = express.Router();
 
@@ -137,4 +137,4 @@ router.delete('/:id', async (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,9 +1,9 @@
-const express = require('express');
-const { GoogleCalendarProvider } = require('../integrations/google-calendar');
-const { requireClerkOrganization } = require('../utils/clerk');
-const { getSaasDatabase } = require('../saas/database');
-const { startGoogleCalendar, completeGoogleCalendar } = require('../saas/integrations');
-const { AppError } = require('../utils/validation');
+import express from 'express';
+import { GoogleCalendarProvider } from '../integrations/google-calendar.js';
+import { requireOrganization } from '../saas/auth-context.js';
+import { getSaasDatabase } from '../saas/database.js';
+import { startGoogleCalendar, completeGoogleCalendar } from '../saas/integrations.js';
+import { AppError } from '../utils/validation.js';
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ function googleProvider() {
   }
 }
 
-router.get('/google/calendar/start', requireClerkOrganization, (req, res, next) => {
+router.get('/google/calendar/start', requireOrganization, (req, res, next) => {
   try {
     return res.json(startGoogleCalendar({ provider: googleProvider(), context: req.organizationContext }));
   } catch (error) {
@@ -32,7 +32,7 @@ router.get('/google/calendar/callback', async (req, res, next) => {
   }
 });
 
-router.get('/google/calendar/status', requireClerkOrganization, async (req, res, next) => {
+router.get('/google/calendar/status', requireOrganization, async (req, res, next) => {
   try {
     const connection = await getSaasDatabase().integrationConnection.findUnique({ where: { organizationId_provider: { organizationId: req.organizationContext.organizationId, provider: 'google_calendar' } }, select: { status: true, updatedAt: true } });
     return res.json({ connected: Boolean(connection && connection.status === 'connected'), status: connection?.status || 'disconnected', updatedAt: connection?.updatedAt || null });
@@ -41,4 +41,4 @@ router.get('/google/calendar/status', requireClerkOrganization, async (req, res,
   }
 });
 
-module.exports = router;
+export default router;
