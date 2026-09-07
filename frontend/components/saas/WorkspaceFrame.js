@@ -1,8 +1,10 @@
 import Link from 'next/link';
-import { OrganizationSwitcher, useOrganization, useOrganizationList } from '@clerk/nextjs';
+import { useOrganization, useOrganizationList } from '@clerk/nextjs';
 import { useAuth } from '@clerk/nextjs';
 import { Bell, Menu, Search } from 'lucide-react';
+import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
@@ -57,7 +59,7 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
           <Button id="workspace-navigation-trigger" type="button" className="workspace-mobile-trigger" variant="outline" size="icon" aria-label="Open workspace navigation" onClick={() => setMobileOpen(true)}><Menu aria-hidden="true" /></Button>
           <div><p className="eyebrow">WORKSPACE</p><h1>{orgSlug || 'Workspace'}</h1></div>
         </div>
-        {clerkEnabled && <div className="workspace-topbar-actions"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter /><OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/onboarding" /></div>}
+        {clerkEnabled && <div className="workspace-topbar-actions"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter /><WorkspaceSwitcher /></div>}
       </header>
       <main className="workspace-content">{clerkEnabled ? <WorkspaceGate orgSlug={orgSlug}>{children}</WorkspaceGate> : children}</main>
     </div>
@@ -65,7 +67,7 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
       <SheetContent side="left" className="workspace-mobile-sheet">
         <SheetHeader><SheetTitle>{orgSlug || 'Workspace'}</SheetTitle><SheetDescription>Workspace navigation</SheetDescription></SheetHeader>
         <WorkspaceNavigation orgSlug={orgSlug} active={current} onNavigate={closeMobile} />
-        {clerkEnabled && <div className="workspace-mobile-switcher"><OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/onboarding" /></div>}
+        {clerkEnabled && <div className="workspace-mobile-switcher"><WorkspaceSwitcher /></div>}
       </SheetContent>
     </Sheet>
   </div>;
@@ -90,7 +92,7 @@ function WorkspaceGate({ orgSlug, children }) {
 
   useEffect(() => {
     setSwitchError('');
-    if (!state.membership || !organization || organization.id === state.membership.organization.id) return undefined;
+    if (!state.membership || organization?.id === state.membership.organization.id) return undefined;
 
     let active = true;
     Promise.resolve(setActive?.({ organization: state.membership.organization.id }))
@@ -107,6 +109,41 @@ function WorkspaceGate({ orgSlug, children }) {
 
 function WorkspaceBrand({ orgSlug }) {
   return <div className="workspace-brand"><span className="workspace-brand-mark" aria-hidden="true">A</span><div><p className="eyebrow">ASTRA WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div></div>;
+}
+
+function WorkspaceSwitcher() {
+  const router = useRouter();
+  const { organization } = useOrganization();
+  const { isLoaded, userMemberships, setActive } = useOrganizationList({ userMemberships: { pageSize: 50 } });
+  const [switching, setSwitching] = useState(false);
+  const memberships = userMemberships?.data || [];
+
+  async function switchWorkspace(membership) {
+    const target = membership?.organization;
+    if (!target || target.id === organization?.id || switching) return;
+    setSwitching(true);
+    try {
+      await setActive?.({ organization: target.id });
+      router.push(`/app/${encodeURIComponent(target.slug || target.id)}`);
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : 'Unable to switch workspace.');
+    } finally {
+      setSwitching(false);
+    }
+  }
+
+  return <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button variant="outline" className="workspace-switcher-trigger" aria-label={`Workspace: ${organization?.name || 'Choose workspace'}`} disabled={!isLoaded || switching}>
+        {switching ? 'Switching…' : organization?.name || 'Choose workspace'}
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="min-w-56">
+      <DropdownMenuLabel>Switch workspace</DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      {memberships.length ? memberships.map((membership) => <DropdownMenuItem key={membership.organization.id} onSelect={() => switchWorkspace(membership)}>{membership.organization.name || membership.organization.slug || membership.organization.id}{membership.organization.id === organization?.id ? ' (current)' : ''}</DropdownMenuItem>) : <DropdownMenuItem disabled>No workspaces available</DropdownMenuItem>}
+    </DropdownMenuContent>
+  </DropdownMenu>;
 }
 
 function WorkspaceNavigation({ orgSlug, active, onNavigate }) {
@@ -128,17 +165,19 @@ function NotificationCenter() {
   const { getToken } = useAuth();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [error, setError] = useState('');
   const unread = notifications.filter((item) => !item.readAt).length;
   useEffect(() => {
     if (!open) return undefined;
     let active = true;
-    getToken().then((token) => saasApi.listNotifications({}, token)).then((result) => { if (active) setNotifications(result.notifications || []); }).catch(() => undefined);
+    setError('');
+    getToken().then((token) => saasApi.listNotifications({}, token)).then((result) => { if (active) setNotifications(result.notifications || []); }).catch((requestError) => { if (active) setError(requestError instanceof ApiError ? requestError.message : 'Notifications are unavailable.'); });
     return () => { active = false; };
   }, [getToken, open]);
   async function markRead(notification) {
-    try { const token = await getToken(); await saasApi.markNotificationRead(notification.id, token); setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item)); } catch (error) { if (error instanceof ApiError) return; }
+    try { const token = await getToken(); await saasApi.markNotificationRead(notification.id, token); setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item)); } catch (markError) { toast.error(markError instanceof ApiError ? markError.message : 'Unable to mark notification read.'); }
   }
-  return <><div aria-live="polite" aria-atomic="true" className="sr-only">{unread ? `${unread} unread notifications` : 'No unread notifications'}</div><DropdownMenu open={open} onOpenChange={setOpen}><DropdownMenuTrigger asChild><Button variant="outline" size="icon" aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`} className="relative"><Bell aria-hidden="true" />{unread ? <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] text-destructive-foreground">{unread > 9 ? '9+' : unread}</span> : null}</Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-80"><DropdownMenuLabel>Notifications</DropdownMenuLabel><DropdownMenuSeparator />{notifications.length ? notifications.slice(0, 10).map((notification) => <DropdownMenuItem key={notification.id} className="items-start gap-2" onSelect={() => markRead(notification)}><span className={notification.readAt ? 'text-sm' : 'text-sm font-semibold'}>{notification.title}<span className="block text-xs font-normal text-muted-foreground">{notification.body}</span></span></DropdownMenuItem>) : <DropdownMenuItem disabled>No notifications yet.</DropdownMenuItem>}</DropdownMenuContent></DropdownMenu></>;
+  return <><div aria-live="polite" aria-atomic="true" className="sr-only">{error ? 'Notifications unavailable' : unread ? `${unread} unread notifications` : 'No unread notifications'}</div><DropdownMenu open={open} onOpenChange={setOpen}><DropdownMenuTrigger asChild><Button variant="outline" size="icon" aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`} className="relative"><Bell aria-hidden="true" />{unread ? <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] text-destructive-foreground">{unread > 9 ? '9+' : unread}</span> : null}</Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-80"><DropdownMenuLabel>Notifications</DropdownMenuLabel><DropdownMenuSeparator />{error ? <DropdownMenuItem disabled>{error}</DropdownMenuItem> : notifications.length ? notifications.slice(0, 10).map((notification) => <DropdownMenuItem key={notification.id} className="items-start gap-2" onSelect={() => markRead(notification)}><span className={notification.readAt ? 'text-sm' : 'text-sm font-semibold'}>{notification.title}<span className="block text-xs font-normal text-muted-foreground">{notification.body}</span></span></DropdownMenuItem>) : <DropdownMenuItem disabled>No notifications yet.</DropdownMenuItem>}</DropdownMenuContent></DropdownMenu></>;
 }
 
 function WorkspaceSearch({ orgSlug }) {

@@ -18,6 +18,14 @@ function NotificationResponseHandler() {
   const { organization } = useOrganization();
   const { isLoaded, userMemberships, setActive } = useOrganizationList({ userMemberships: { pageSize: 20 } });
   const handled = useRef<string | null>(null);
+  const pending = useRef<{ destination: string; organizationId: string; identifier: string } | null>(null);
+
+  useEffect(() => {
+    const target = pending.current;
+    if (!target || target.organizationId !== organization?.id) return;
+    pending.current = null;
+    router.push(target.destination);
+  }, [organization?.id, router]);
 
   useEffect(() => {
     const notification = response?.notification;
@@ -29,15 +37,19 @@ function NotificationResponseHandler() {
       resourceId: typeof data?.resourceId === 'string' ? data.resourceId : null,
     });
     if (!identifier || handled.current === identifier || !isSignedIn || !isLoaded || !destination) return;
+    const notificationIdentifier = identifier;
     const target = destination;
-    handled.current = identifier;
+    handled.current = notificationIdentifier;
     const organizationId = typeof data?.organizationId === 'string' ? data.organizationId : '';
     async function openDestination() {
       if (organizationId && organizationId !== organization?.id) {
         const belongsToWorkspace = userMemberships?.data?.some((membership) => membership.organization.id === organizationId);
         if (!belongsToWorkspace) return;
+        pending.current = { destination: target, organizationId, identifier: notificationIdentifier };
         await setActive?.({ organization: organizationId });
+        return;
       }
+      pending.current = null;
       router.push(target);
     }
     openDestination().catch(() => undefined);

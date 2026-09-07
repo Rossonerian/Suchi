@@ -77,3 +77,13 @@ export function isoToLocalDateTime(iso, timeZone) {
   const parts = partsForTimeZone(new Date(iso), timeZone || 'UTC');
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour === '24' ? '00' : parts.hour}:${parts.minute}`;
 }
+
+/**
+ * Preserve an existing instant when an edit leaves its ambiguous wall-clock
+ * value untouched. This matters during the repeated hour at DST fall-back,
+ * where a datetime-local input cannot represent which occurrence was meant.
+ */
+export function localDateTimeToIsoPreservingInstant(originalIso, value, timeZone, originalTimeZone = timeZone) {
+  if (originalIso && originalTimeZone === timeZone && isoToLocalDateTime(originalIso, timeZone) === value) return originalIso;
+  return localDateTimeToIso(value, timeZone);
+}

@@ -25,7 +25,13 @@ export type MobileNotification = { id: string; title: string; body: string; crea
 
 export const mobileApi = {
   projects: (token: string) => apiRequest<{ projects: Project[] }>('/v1/projects', token),
-  tasks: (token: string) => apiRequest<{ tasks: Task[] }>('/v1/tasks', token),
+  tasks: (token: string, filters: { projectId?: string; assigneeMembershipId?: string } = {}) => {
+    const query = new URLSearchParams();
+    if (filters.projectId) query.set('projectId', filters.projectId);
+    if (filters.assigneeMembershipId) query.set('assigneeMembershipId', filters.assigneeMembershipId);
+    const suffix = query.toString();
+    return apiRequest<{ tasks: Task[] }>(`/v1/tasks${suffix ? `?${suffix}` : ''}`, token);
+  },
   task: (token: string, id: string) => apiRequest<{ task: Task }>(`/v1/tasks/${encodeURIComponent(id)}`, token),
   createTask: (token: string, payload: { projectId: string; title: string; priority?: string; dueAt?: string | null }) => apiRequest<{ task: Task }>('/v1/tasks', token, { method: 'POST', body: JSON.stringify(payload) }),
   updateTask: (token: string, id: string, payload: Partial<Pick<Task, 'status' | 'priority'>>) => apiRequest<{ task: Task }>(`/v1/tasks/${encodeURIComponent(id)}`, token, { method: 'PATCH', body: JSON.stringify(payload) }),

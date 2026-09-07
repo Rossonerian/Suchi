@@ -68,8 +68,8 @@ export default function DataTable({ columns, data, searchPlaceholder = 'Filter r
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => <TableHead key={header.id} scope="col">
-                {header.isPlaceholder ? null : header.column.getCanSort() ? <Button variant="ghost" size="sm" onClick={header.column.getToggleSortingHandler()}>{<table.FlexRender header={header} />}{header.column.getIsSorted() === 'asc' ? <ChevronUp /> : header.column.getIsSorted() === 'desc' ? <ChevronDown /> : null}</Button> : <table.FlexRender header={header} />}
+              {headerGroup.headers.map((header) => <TableHead key={header.id} scope="col" aria-sort={header.column.getIsSorted() === 'asc' ? 'ascending' : header.column.getIsSorted() === 'desc' ? 'descending' : header.column.getCanSort() ? 'none' : undefined}>
+                {header.isPlaceholder ? null : header.column.getCanSort() ? <Button variant="ghost" size="sm" aria-label={`Sort by ${typeof header.column.columnDef.header === 'string' ? header.column.columnDef.header : header.column.id}; currently ${header.column.getIsSorted() === 'asc' ? 'ascending' : header.column.getIsSorted() === 'desc' ? 'descending' : 'not sorted'}`} onClick={header.column.getToggleSortingHandler()}>{<table.FlexRender header={header} />}{header.column.getIsSorted() === 'asc' ? <ChevronUp aria-hidden="true" /> : header.column.getIsSorted() === 'desc' ? <ChevronDown aria-hidden="true" /> : null}</Button> : <table.FlexRender header={header} />}
               </TableHead>)}
             </TableRow>)}
           </TableHeader>

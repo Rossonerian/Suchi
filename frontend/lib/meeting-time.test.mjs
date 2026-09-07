@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { formatMeetingTime, isoToLocalDateTime, localDateTimeToIso } from './meeting-time.mjs';
+import { formatMeetingTime, isoToLocalDateTime, localDateTimeToIso, localDateTimeToIsoPreservingInstant } from './meeting-time.mjs';
 
 test('converts a wall-clock time in a named timezone to the correct instant', () => {
   assert.equal(localDateTimeToIso('2026-01-15T09:30', 'Asia/Kolkata'), '2026-01-15T04:00:00.000Z');
@@ -27,4 +27,11 @@ test('rejects wall-clock times skipped by a DST transition', () => {
 test('handles London DST boundaries and stable non-DST zones', () => {
   assert.equal(localDateTimeToIso('2026-03-29T02:30', 'Europe/London'), '2026-03-29T01:30:00.000Z');
   assert.equal(localDateTimeToIso('2026-01-15T09:30', 'Asia/Kolkata'), '2026-01-15T04:00:00.000Z');
+});
+
+test('preserves the later repeated fall-back instant when an edit is unchanged', () => {
+  const laterOccurrence = '2026-11-01T06:30:00.000Z';
+  const wallClock = isoToLocalDateTime(laterOccurrence, 'America/New_York');
+  assert.equal(wallClock, '2026-11-01T01:30');
+  assert.equal(localDateTimeToIsoPreservingInstant(laterOccurrence, wallClock, 'America/New_York'), laterOccurrence);
 });
