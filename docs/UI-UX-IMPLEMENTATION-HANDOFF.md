@@ -42,6 +42,9 @@ This handoff records the implementation slices completed from the Astra UI/UX Pr
 - `bffdbf3` — honor the current mobile project route filter after notification navigation.
 - `ffd1417` — add a regression test for reused mobile Tasks project routes.
 - `cb00954` — record the final real-runtime verification evidence and blockers.
+- `c44e540` — add the guarded, idempotent disposable SaaS runtime seed tool.
+- `ea4dec2` — document the exact development runtime environment contract.
+- `47ce32d` — record disposable PostgreSQL and Android emulator provisioning.
 
 ## Files and components changed
 
