@@ -12,7 +12,7 @@ const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolea
 
 function CalendarContent({ orgSlug }) {
   const auth = useAuth();
-  const { status } = useClerkPageState(auth);
+  const { status } = useClerkPageState(auth, orgSlug);
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

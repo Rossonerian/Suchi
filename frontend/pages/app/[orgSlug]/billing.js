@@ -9,7 +9,7 @@ const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolea
 
 function BillingContent({ orgSlug }) {
   const auth = useAuth();
-  const { status } = useClerkPageState(auth);
+  const { status } = useClerkPageState(auth, orgSlug);
   const [billing, setBilling] = useState(null);
   const [error, setError] = useState('');
   useEffect(() => {

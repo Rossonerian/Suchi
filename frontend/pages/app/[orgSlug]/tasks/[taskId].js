@@ -18,7 +18,7 @@ function taskDate(value) { return value ? new Date(value).toISOString().slice(0,
 
 function TaskContent({ orgSlug, taskId }) {
   const auth = useAuth();
-  const { status } = useClerkPageState(auth);
+  const { status } = useClerkPageState(auth, orgSlug);
   const [task, setTask] = useState(null);
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState({ title: '', description: '', status: 'todo', priority: 'none', dueAt: '' });

@@ -13,7 +13,7 @@ const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolea
 function TeamContent({ orgSlug }) {
   const auth = useAuth();
   const { getToken } = auth;
-  const { status } = useClerkPageState(auth);
+  const { status } = useClerkPageState(auth, orgSlug);
   const [members, setMembers] = useState([]);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('member');

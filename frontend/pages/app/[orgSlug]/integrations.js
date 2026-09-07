@@ -11,7 +11,7 @@ const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolea
 function IntegrationsContent({ orgSlug }) {
   const auth = useAuth();
   const { getToken } = auth;
-  const { status } = useClerkPageState(auth);
+  const { status } = useClerkPageState(auth, orgSlug);
   const [connection, setConnection] = useState({ connected: false, status: 'disconnected' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);

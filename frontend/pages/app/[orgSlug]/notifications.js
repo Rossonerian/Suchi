@@ -19,7 +19,7 @@ function notificationHref(orgSlug, item) {
 }
 
 function NotificationsContent({ orgSlug }) {
-  const auth = useAuth(); const { getToken } = auth; const { status } = useClerkPageState(auth); const [notifications, setNotifications] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  const auth = useAuth(); const { getToken } = auth; const { status } = useClerkPageState(auth, orgSlug); const [notifications, setNotifications] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
   const load = useCallback(async () => { setLoading(true); setError(''); try { const result = await getToken().then((token) => saasApi.listNotifications({}, token)); setNotifications(result.notifications || []); } catch (err) { setError(err instanceof ApiError ? err.message : 'Notifications are unavailable.'); } finally { setLoading(false); } }, [getToken]);
   useEffect(() => { if (!status) load(); }, [load, status]);
   async function markRead(item) { try { await saasApi.markNotificationRead(item.id, await auth.getToken()); setNotifications((current) => current.map((entry) => entry.id === item.id ? { ...entry, readAt: new Date().toISOString() } : entry)); } catch (err) { toast.error(err instanceof ApiError ? err.message : 'Unable to mark notification read.'); } }

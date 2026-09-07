@@ -59,7 +59,7 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
           <Button id="workspace-navigation-trigger" type="button" className="workspace-mobile-trigger" variant="outline" size="icon" aria-label="Open workspace navigation" onClick={() => setMobileOpen(true)}><Menu aria-hidden="true" /></Button>
           <div><p className="eyebrow">WORKSPACE</p><h1>{orgSlug || 'Workspace'}</h1></div>
         </div>
-        {clerkEnabled && <div className="workspace-topbar-actions"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter /><WorkspaceSwitcher /></div>}
+        {clerkEnabled && <div className="workspace-topbar-actions"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter orgSlug={orgSlug} /><WorkspaceSwitcher /></div>}
       </header>
       <main className="workspace-content">{clerkEnabled ? <WorkspaceGate orgSlug={orgSlug}>{children}</WorkspaceGate> : children}</main>
     </div>
@@ -123,8 +123,8 @@ function WorkspaceSwitcher() {
     if (!target || target.id === organization?.id || switching) return;
     setSwitching(true);
     try {
+      await router.push(`/app/${encodeURIComponent(target.slug || target.id)}`);
       await setActive?.({ organization: target.id });
-      router.push(`/app/${encodeURIComponent(target.slug || target.id)}`);
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : 'Unable to switch workspace.');
     } finally {
@@ -161,19 +161,23 @@ function WorkspaceNavigation({ orgSlug, active, onNavigate }) {
   </nav>;
 }
 
-function NotificationCenter() {
+function NotificationCenter({ orgSlug }) {
   const { getToken } = useAuth();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [error, setError] = useState('');
   const unread = notifications.filter((item) => !item.readAt).length;
   useEffect(() => {
+    setNotifications([]);
+    setError('');
+  }, [orgSlug]);
+  useEffect(() => {
     if (!open) return undefined;
     let active = true;
     setError('');
     getToken().then((token) => saasApi.listNotifications({}, token)).then((result) => { if (active) setNotifications(result.notifications || []); }).catch((requestError) => { if (active) setError(requestError instanceof ApiError ? requestError.message : 'Notifications are unavailable.'); });
     return () => { active = false; };
-  }, [getToken, open]);
+  }, [getToken, open, orgSlug]);
   async function markRead(notification) {
     try { const token = await getToken(); await saasApi.markNotificationRead(notification.id, token); setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item)); } catch (markError) { toast.error(markError instanceof ApiError ? markError.message : 'Unable to mark notification read.'); }
   }
@@ -184,14 +188,21 @@ function WorkspaceSearch({ orgSlug }) {
   const { getToken } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    setQuery('');
+    setResults(null);
+    setError('');
+  }, [orgSlug]);
   useEffect(() => {
     if (query.trim().length < 2) { setResults(null); return undefined; }
     let active = true;
-    const timer = setTimeout(() => getToken().then((token) => saasApi.searchWorkspace(query.trim(), token)).then((result) => { if (active) setResults(result); }).catch(() => { if (active) setResults(null); }), 220);
+    setError('');
+    const timer = setTimeout(() => getToken().then((token) => saasApi.searchWorkspace(query.trim(), token)).then((result) => { if (active) setResults(result); }).catch((searchError) => { if (active) { setResults(null); setError(searchError instanceof ApiError ? searchError.message : 'Search is unavailable.'); } }), 220);
     return () => { active = false; clearTimeout(timer); };
   }, [getToken, query]);
   const all = results ? [...(results.projects || []).map((item) => ({ ...item, type: 'Project' })), ...(results.tasks || []).map((item) => ({ ...item, type: 'Task' })), ...(results.meetings || []).map((item) => ({ ...item, type: 'Meeting' }))].slice(0, 8) : [];
-  return <div className="workspace-search relative hidden w-52 lg:block"><label htmlFor="workspace-search" className="sr-only">Search workspace</label><div className="flex items-center gap-2 rounded-md border border-input bg-background px-2"><Search aria-hidden="true" className="h-4 w-4 text-muted-foreground" /><input id="workspace-search" className="h-8 min-h-0 border-0 bg-transparent px-0 text-sm outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search…" /></div>{results && <div className="absolute right-0 top-10 z-20 w-72 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg">{all.length ? all.map((item) => <Link key={`${item.type}-${item.id}`} href={`/app/${orgSlug}/${item.type === 'Project' ? `projects/${item.id}` : item.type === 'Task' ? `tasks/${item.id}` : `meetings?meeting=${item.id}`}`} className="block rounded px-2 py-1.5 text-sm hover:bg-muted"><span className="mr-2 text-xs text-muted-foreground">{item.type}</span>{item.name || item.title}</Link>) : <p className="p-2 text-sm text-muted-foreground">No matches.</p>}</div>}</div>;
+  return <div className="workspace-search relative hidden w-52 lg:block"><label htmlFor="workspace-search" className="sr-only">Search workspace</label><div className="flex items-center gap-2 rounded-md border border-input bg-background px-2"><Search aria-hidden="true" className="h-4 w-4 text-muted-foreground" /><input id="workspace-search" className="h-8 min-h-0 border-0 bg-transparent px-0 text-sm outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search…" /></div>{(results || error) && <div className="absolute right-0 top-10 z-20 w-72 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg">{error ? <p className="p-2 text-sm text-destructive" role="alert">{error}</p> : all.length ? all.map((item) => <Link key={`${item.type}-${item.id}`} href={`/app/${orgSlug}/${item.type === 'Project' ? `projects/${item.id}` : item.type === 'Task' ? `tasks/${item.id}` : `meetings?meeting=${item.id}`}`} className="block rounded px-2 py-1.5 text-sm hover:bg-muted"><span className="mr-2 text-xs text-muted-foreground">{item.type}</span>{item.name || item.title}</Link>) : <p className="p-2 text-sm text-muted-foreground">No matches.</p>}</div>}</div>;
 }
 
 export function FeatureDisabled({ orgSlug }) {

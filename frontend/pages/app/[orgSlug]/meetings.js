@@ -25,7 +25,7 @@ function MeetingRow({ meeting, onSelect }) {
 }
 
 function MeetingsContent({ orgSlug }) {
-  const auth = useAuth(); const { getToken } = auth; const { status } = useClerkPageState(auth); const router = useRouter();
+  const auth = useAuth(); const { getToken } = auth; const { status } = useClerkPageState(auth, orgSlug); const router = useRouter();
   const [meetings, setMeetings] = useState([]); const [projects, setProjects] = useState([]); const [members, setMembers] = useState([]); const [draft, setDraft] = useState(emptyDraft); const [selected, setSelected] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [saving, setSaving] = useState(false);
   const load = useCallback(async () => { setLoading(true); setError(''); try { const token = await getToken(); const [meetingResult, projectResult, memberResult] = await Promise.all([saasApi.listMeetings({}, token), saasApi.listProjects(token), saasApi.listMembers(token)]); setMeetings(meetingResult.meetings || []); setProjects(projectResult.projects || []); setMembers(memberResult.members || []); } catch (err) { setError(err instanceof ApiError ? err.message : 'Meetings are unavailable.'); } finally { setLoading(false); } }, [getToken]);
   useEffect(() => { if (!status) load(); }, [load, status]);
