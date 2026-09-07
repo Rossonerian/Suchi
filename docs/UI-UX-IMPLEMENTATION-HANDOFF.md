@@ -18,13 +18,13 @@ This handoff records the implementation slices completed from the Astra UI/UX Pr
 | SaaS task work view and task detail | COMPLETE BUT RUNTIME UNVERIFIED | Search, status/priority/project filters, URL project scope, optimistic status rollback, explicit project selection, shareable task route. Assignee editing remains API-limited. |
 | My Work | COMPLETE BUT RUNTIME UNVERIFIED | Membership-scoped loading with overdue/today/upcoming/completed sections; helper regression coverage exists. |
 | Home attention summary | COMPLETE BUT RUNTIME UNVERIFIED | Blocked/due-today/overdue/next commitments and project links replace inventory-first presentation. |
-| Meeting timezone and lifecycle UI | COMPLETE + VERIFIED (logic) | IANA conversion helpers and tests; scheduling/edit/cancel/attendees/project/location/error states implemented. Live provider and DST browser checks remain. |
+| Meeting timezone and lifecycle UI | COMPLETE + VERIFIED (logic) | IANA conversion helpers now reject nonexistent DST wall-clock times and choose the earlier valid instant for ambiguous times; deterministic Kolkata/New York/London boundary tests pass. Live provider synchronization remains unverified. |
 | Inbox/notification deep links | COMPLETE BUT RUNTIME UNVERIFIED | Loading/error/empty/read states and task/project/meeting links; live notification payloads remain unverified. |
 | AI proposal review safety | COMPLETE BUT RUNTIME UNVERIFIED | All supplied proposal arguments, discard/confirm, side-effect warning, and created-task links; backend/provider execution remains unverified. |
 | Onboarding and workspace choice | COMPLETE BUT RUNTIME UNVERIFIED | Generated editable slug; one membership can route directly, multiple memberships require explicit selection. |
 | Legacy task detail modal accessibility | COMPLETE BUT RUNTIME UNVERIFIED | Replaced the custom overlay with shadcn Dialog semantics, labeled fields, Escape/focus behavior, and delete confirmation. |
 | Settings scope entry point | PARTIAL | Personal/workspace grouping route added; full permissions, integration health, and billing UX remain. |
-| Expo navigation/workspace/task workflows | COMPLETE BUT RUNTIME UNVERIFIED | Persistent nav, explicit workspace selection, projects, task creation/detail/retry, meetings, notifications, and AI review; no physical device/provider verification. |
+| Expo navigation/workspace/task workflows | COMPLETE BUT RUNTIME UNVERIFIED | Persistent nav, explicit workspace selection, organization-scoped caches, notification resource routing, task creation/detail/retry, meetings, notifications, and AI review; no physical device/provider verification. |
 
 ## Commits
 
@@ -34,6 +34,8 @@ This handoff records the implementation slices completed from the Astra UI/UX Pr
 - `e091f00` — task form error association.
 - `65a91d3` — workspace destinations and context alignment.
 - `55c735e` — accessible legacy task detail dialog.
+- `ba2d3eb` — meeting DST hardening and mobile notification/deep-link safety.
+- `15fd910` — active-workspace gating, workspace-context tests, and URL-backed SaaS task filters.
 
 ## Files and components changed
 
@@ -50,8 +52,9 @@ Mobile: Expo workspace, persistent navigation, projects, tasks/task detail, meet
 Passed:
 
 - `npm test` (root domain/database suites: 5 tests).
-- `cd frontend && npm test` (13 tests).
-- `cd frontend && npm run lint` (pass; six existing React Hook dependency warnings remain).
+- `cd backend && npm test` (81 tests).
+- `cd frontend && npm test` (23 tests, including workspace-context and DST/task-filter regressions).
+- `cd frontend && npm run lint` (pass; two React Hook dependency warnings remain in Meetings and Notifications).
 - `cd frontend && npm run build` (pass; 24 Pages Router routes generated).
 - `cd apps/mobile && npm run typecheck` (pass).
 - `cd apps/mobile && npm run lint` (pass).
@@ -60,17 +63,17 @@ Passed:
 
 Not verified:
 
-- Authenticated Clerk organization switching with real memberships.
+- Authenticated Clerk organization switching with real memberships; no Clerk publishable key or test account is configured in this checkout.
 - Populated authenticated web screens against a live SaaS API.
-- Real Google Calendar, OpenRouter, notification-provider, or email delivery behavior.
-- Physical iOS/Android device or emulator behavior.
+- Real Google Calendar, OpenRouter, notification-provider, or email delivery behavior; no development provider credentials are configured.
+- Physical iOS/Android device or emulator behavior; no device runtime is available in this environment.
 
 ## Remaining risks and follow-up
 
-P0/P1 follow-up remains for live verification and deeper parity: DataTable sort/selection semantics and mobile populated-table behavior need an authenticated browser pass; task assignee editing needs richer API response/UI support; meeting DST/provider synchronization needs development-service verification; AI edit/partial-success flows need backend contracts; and mobile notification deep links need provider testing.
+P0/P1 follow-up remains for live verification and deeper parity: authenticated workspace switching and populated task/table behavior require a configured Clerk development account; task assignee/priority editing needs richer API response/UI support; Google Calendar synchronization needs a development provider; AI edit/partial-success flows need backend contracts; and native notification delivery needs Expo provider/device testing. The deterministic timezone, organization-context, URL-filter, mobile deep-link mapping, and cache-boundary checks are now covered locally.
 
-The current lint warnings are non-blocking but should be cleaned up before release. No backend, production data, external credentials, or deployments were changed.
+The two remaining lint warnings are non-blocking but should be cleaned up before release. No backend, production data, external credentials, or deployments were changed.
 
 ## Production assessment
 
-The implementation materially improves the Astra P0/P1 baseline and is independently buildable, but it is **not yet production-ready** until authenticated browser/device verification and the remaining accessibility/deep-link issues above are closed.
+The implementation materially improves the Astra P0/P1 baseline and is independently buildable, but it is **not yet production-ready** until authenticated browser/device verification is performed with safe development credentials and the remaining provider/runtime evidence is collected.
