@@ -2,6 +2,7 @@
 // its title in any team column. Same update/delete actions as the inline
 // row, just with room to see and edit everything at once.
 import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 
 const STATUS_OPTIONS = [
   { value: 'todo', label: 'To do' },
@@ -36,28 +37,33 @@ export default function TaskDetailModal({ task, members, teamName, onUpdate, onD
   }
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={{ ...styles.panel, ...(task.highlighted ? styles.panelHighlighted : {}) }} onClick={(e) => e.stopPropagation()}>
+    <Dialog open={Boolean(task)} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto" aria-describedby="task-detail-description">
+        <DialogHeader>
+          <DialogTitle>{task.title}</DialogTitle>
+          <DialogDescription id="task-detail-description">Review and update this task without losing your place in the work list.</DialogDescription>
+        </DialogHeader>
         <div style={styles.topRow}>
           <span style={styles.teamTag}>{teamName}</span>
           {task.subProblemRef && (
             <span style={styles.subRef}>SP-{String(task.subProblemRef).padStart(2, '0')}</span>
           )}
           <button
+            type="button"
             className={`highlight-toggle ${task.highlighted ? 'highlight-toggle--on' : ''}`}
             style={styles.modalHighlightBtn}
             onClick={() => onUpdate(task._id, { highlighted: !task.highlighted })}
             title={task.highlighted ? 'Remove highlight' : 'Highlight this task'}
+            aria-label={task.highlighted ? 'Remove task highlight' : 'Highlight task'}
           >
             {task.highlighted ? '★' : '☆'}
           </button>
-          <button style={styles.closeBtn} onClick={onClose} title="Close">✕</button>
+          <button type="button" style={styles.closeBtn} onClick={onClose} title="Close" aria-label="Close task details">✕</button>
         </div>
 
-        <h2 style={styles.title}>{task.title}</h2>
-
-        <label style={styles.label}>Description</label>
+        <label style={styles.label} htmlFor="task-detail-description-input">Description</label>
         <textarea
+          id="task-detail-description-input"
           style={styles.textarea}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -68,8 +74,9 @@ export default function TaskDetailModal({ task, members, teamName, onUpdate, onD
 
         <div style={styles.fieldRow}>
           <div style={styles.field}>
-            <label style={styles.label}>Status</label>
+            <label style={styles.label} htmlFor="task-detail-status">Status</label>
             <select
+              id="task-detail-status"
               style={styles.input}
               value={task.status}
               onChange={(e) => onUpdate(task._id, { status: e.target.value })}
@@ -81,8 +88,9 @@ export default function TaskDetailModal({ task, members, teamName, onUpdate, onD
           </div>
 
           <div style={styles.field}>
-            <label style={styles.label}>Assignee</label>
+            <label style={styles.label} htmlFor="task-detail-assignee">Assignee</label>
             <select
+              id="task-detail-assignee"
               style={styles.input}
               value={task.assignee?._id || task.assignee || ''}
               onChange={(e) => onUpdate(task._id, { assignee: e.target.value || null })}
@@ -101,9 +109,9 @@ export default function TaskDetailModal({ task, members, teamName, onUpdate, onD
           {formatDate(task.updatedAt) && <span>Updated {formatDate(task.updatedAt)}</span>}
         </div>
 
-        <button style={styles.deleteBtn} onClick={handleDelete}>Delete task</button>
-      </div>
-    </div>
+        <button type="button" style={styles.deleteBtn} onClick={() => { if (window.confirm(`Delete “${task.title}”?`)) handleDelete(); }}>Delete task</button>
+      </DialogContent>
+    </Dialog>
   );
 }
 
