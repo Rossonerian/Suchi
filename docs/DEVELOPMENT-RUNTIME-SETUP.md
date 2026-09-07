@@ -11,13 +11,13 @@ disable Clerk or tenant authorization to make a test pass.
 | ---------- | ----------------------: | ----------------: | ------------------: | ----------------------------: |
 | Node/npm | Yes | Yes | Not needed | No |
 | Legacy MongoDB/session API | No, unless legacy regression testing is also desired | Local legacy configuration exists | No action taken | No |
-| PostgreSQL 16 | Yes | Docker available | Yes — disposable local container | No |
+| PostgreSQL 16 | Yes | Docker available; `nidar-saas-postgres-runtime-check` is running on `127.0.0.1:55432` | Yes — disposable local container | No |
 | Clerk Organizations | Yes | No local development credentials or CLI | No | Yes |
 | Google Calendar OAuth | Yes, for live Calendar verification | No | No | Yes |
 | OpenRouter | Yes, for live AI verification | No | No | Yes |
 | Expo CLI/Metro | Yes, for native verification | Yes | Metro can run locally | No |
 | Android SDK | Yes, for native verification | Platform tools/API 35 available | Partly | System image or device required |
-| Android emulator | Yes, for native verification | No AVD/system image | Only after a compatible image is present | Usually |
+| Android emulator | Yes, for native verification | `NIDAR_Runtime_API35` is created and boots on `emulator-5554` | Yes — user-owned API 35 image | No for this checkout |
 | Expo push | Yes, if push ships | App plugin is installed | No | Yes — Expo project/development device |
 | Legacy SMTP email | No for the SaaS gate | Local legacy configuration exists | Do not exercise it | No |
 
@@ -166,7 +166,8 @@ Create only synthetic fixtures:
 
 The release test seeds local metadata only after the corresponding real Clerk
 IDs exist. It must not use fabricated Clerk IDs or application-side auth
-bypasses.
+bypasses. The current disposable database has all six migrations applied and
+contains no fixture rows yet.
 
 ## Google Calendar development setup
 
@@ -185,9 +186,10 @@ Beta.
 
 ## Native and push setup
 
-The repository includes Expo Router and `expo-notifications`, but it has no
-configured AVD, EAS project, or attached device. Install/boot a compatible
-development emulator or connect a device before native verification. For push,
+The repository includes Expo Router and `expo-notifications`. A disposable API
+35 AVD (`NIDAR_Runtime_API35`) is now provisioned under the user-owned Android
+SDK and has booted successfully; no Expo app has been authenticated or
+installed because Clerk mobile configuration is still absent. For push,
 configure an Expo development project and device push token, then test
 foreground, background, and cold-start taps while a different workspace is
 active.

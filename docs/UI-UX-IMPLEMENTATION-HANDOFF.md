@@ -72,7 +72,7 @@ Not verified:
 - Authenticated Clerk organization switching with real memberships; no Clerk publishable key or test account is configured in this checkout.
 - Populated authenticated web screens against a live SaaS API, including workspace A/B switching and populated task/table keyboard behavior.
 - Real Google Calendar, OpenRouter, notification-provider, or email delivery behavior; no development provider credentials are configured.
-- Physical iOS/Android device or emulator behavior; no device runtime is available in this environment.
+- Physical iOS behavior and authenticated Android app behavior; an API 35 Android emulator is now booted, but Clerk mobile configuration and app installation are still blocked.
 
 ## Remaining risks and follow-up
 
@@ -88,24 +88,28 @@ The implementation materially improves the Astra P0/P1 baseline and is independe
 
 Date: 2026-09-07
 
-This release-gate pass did not weaken authentication or use production data. The
-local checkout has a legacy MongoDB/SMTP development environment, but it has no
-SaaS PostgreSQL database URL, Clerk development credentials, Google Calendar
-OAuth credentials, OpenRouter key, Expo Clerk configuration, or connected
-emulator/device. Provider tests use injected test doubles only; they are not
-evidence of live-provider success.
+This release-gate pass did not weaken authentication or use production data. A
+loopback-only disposable PostgreSQL 16 container is provisioned and migrated,
+and an API 35 Android emulator is booted from a user-owned SDK. The checkout
+still has no Clerk development credentials, Google Calendar OAuth credentials,
+OpenRouter key, Expo Clerk configuration, or seeded Clerk identities. Provider
+tests use injected test doubles only; they are not evidence of live-provider
+success.
 
-| Capability | Unit | Integration | Browser | Mobile | Live provider | Status |
-| ---------- | ---- | ----------- | ------- | ------ | ------------- | ------ |
-| Clerk authentication and onboarding | VERIFIED | PARTIAL | PARTIAL | BLOCKED | NOT APPLICABLE | BLOCKED |
-| Tenant switching and isolation | VERIFIED | VERIFIED | BLOCKED | BLOCKED | NOT APPLICABLE | BLOCKED |
-| Projects and task lifecycle | VERIFIED | VERIFIED | BLOCKED | BLOCKED | NOT APPLICABLE | PARTIAL |
-| Meeting time handling | VERIFIED | VERIFIED | BLOCKED | BLOCKED | BLOCKED | PARTIAL |
-| Notifications and resource links | PARTIAL | VERIFIED | PARTIAL | BLOCKED | BLOCKED | PARTIAL |
-| AI proposal safety | VERIFIED | PARTIAL | BLOCKED | BLOCKED | BLOCKED | PARTIAL |
-| Google Calendar | VERIFIED | VERIFIED | BLOCKED | NOT APPLICABLE | BLOCKED | PARTIAL |
-| Expo mobile workflow | VERIFIED | NOT APPLICABLE | NOT APPLICABLE | BLOCKED | BLOCKED | PARTIAL |
-| Mobile push deep links | PARTIAL | NOT APPLICABLE | NOT APPLICABLE | BLOCKED | BLOCKED | PARTIAL |
+| Capability | Automated | Auth browser | Native | Live provider | Result |
+| ---------- | --------- | ------------ | ------ | ------------- | ------ |
+| Clerk authentication and onboarding | VERIFIED | BLOCKED | BLOCKED | NOT USED | BLOCKED |
+| Workspace switching | VERIFIED | BLOCKED | BLOCKED | NOT USED | BLOCKED |
+| Tenant denial | VERIFIED | BLOCKED | BLOCKED | NOT USED | BLOCKED |
+| Home | VERIFIED | BLOCKED | BLOCKED | NOT USED | BLOCKED |
+| Projects | VERIFIED | BLOCKED | BLOCKED | NOT USED | BLOCKED |
+| Tasks and task detail | VERIFIED | BLOCKED | BLOCKED | NOT USED | BLOCKED |
+| Meetings and timezone handling | VERIFIED | BLOCKED | BLOCKED | BLOCKED | PARTIAL |
+| Notifications and resource links | MOCK/LOCAL VERIFIED | BLOCKED | BLOCKED | BLOCKED | PARTIAL |
+| AI proposal safety | MOCK/LOCAL VERIFIED | BLOCKED | BLOCKED | BLOCKED | PARTIAL |
+| Google Calendar | MOCK/LOCAL VERIFIED | BLOCKED | NOT USED | BLOCKED | BLOCKED |
+| Expo mobile workflow | VERIFIED | NOT USED | BLOCKED | NOT USED | BLOCKED |
+| Mobile push deep links | MOCK/LOCAL VERIFIED | NOT USED | BLOCKED | BLOCKED | BLOCKED |
 
 Evidence: Clerk context/workspace tests and unconfigured route guards pass, but
 no signed-in Clerk session exists. Backend tenant tests cover projects, tasks,
@@ -113,7 +117,9 @@ meetings, and notifications. Task filters/form behavior and AI confirmation
 helpers are unit-covered. Google Calendar and provider-call tests use injected
 test doubles. Firefox/Playwright rendered the sign-in and unauthenticated
 workspace access gate, not populated workspace content. The Expo typecheck,
-lint, and current-route test pass, while `adb devices` reports no device.
+lint, and current-route test pass. The disposable database is migrated with
+zero fixture rows until real Clerk IDs are supplied; `emulator-5554` is booted,
+but no mobile app can authenticate without the Clerk mobile key.
 
 ## Runtime observations from this pass
 
@@ -149,6 +155,7 @@ lint, and current-route test pass, while `adb devices` reports no device.
 4. For live AI evidence, configure a development-only `OPENROUTER_API_KEY`
    with a low-cost approved model.
 5. For native evidence, supply `EXPO_PUBLIC_API_URL` and the Expo Clerk key to
-   a development build, attach an Android/iOS emulator or device, and configure
-   a development Expo push channel for foreground, background, and cold-start
+   a development build, then install the app on the already-provisioned
+   `NIDAR_Runtime_API35` emulator (or attach an iOS/device runtime). Configure a
+   development Expo push channel for foreground, background, and cold-start
    verification.
