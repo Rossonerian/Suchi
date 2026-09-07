@@ -60,12 +60,12 @@ Passed:
 - `cd apps/mobile && npm run typecheck` (pass).
 - `cd apps/mobile && npm run lint` (pass).
 - `git diff --check` (pass).
-- Browser smoke checks against the production build: `/`, all primary `/app/acme/*` destinations, project/task detail URLs, and `/onboarding` returned HTTP 200. The 390px calendar shell exposed a compact navigation trigger and no migration placeholder.
+- Browser smoke checks against the production build: `/`, all primary `/app/acme/*` destinations, project/task detail URLs, and `/onboarding` returned HTTP 200. Firefox reported zero console errors/warnings. At 390px the workspace Sheet opened with named navigation links and Escape restored focus to the navigation trigger; at 1440px the expanded navigation exposed the grouped destinations.
 
 Not verified:
 
 - Authenticated Clerk organization switching with real memberships; no Clerk publishable key or test account is configured in this checkout.
-- Populated authenticated web screens against a live SaaS API.
+- Populated authenticated web screens against a live SaaS API, including workspace A/B switching and populated task/table keyboard behavior.
 - Real Google Calendar, OpenRouter, notification-provider, or email delivery behavior; no development provider credentials are configured.
 - Physical iOS/Android device or emulator behavior; no device runtime is available in this environment.
 
