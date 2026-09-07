@@ -5,9 +5,10 @@ import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'r
 import { useState } from 'react';
 import { mobileApi, Project, Task } from '../src/api';
 import { MobileNav } from '../src/MobileNav';
+import { projectIdFromParams } from '../src/task-route.mjs';
 
 export default function TasksScreen() {
-  const { getToken } = useAuth(); const { organization } = useOrganization(); const { userMemberships } = useOrganizationList({ userMemberships: { pageSize: 20 } }); const params = useLocalSearchParams<{ projectId?: string }>(); const router = useRouter(); const queryClient = useQueryClient(); const [title, setTitle] = useState(''); const projectId = typeof params.projectId === 'string' ? params.projectId : '';
+  const { getToken } = useAuth(); const { organization } = useOrganization(); const { userMemberships } = useOrganizationList({ userMemberships: { pageSize: 20 } }); const params = useLocalSearchParams<{ projectId?: string }>(); const router = useRouter(); const queryClient = useQueryClient(); const [title, setTitle] = useState(''); const projectId = projectIdFromParams(params);
   const membershipId = userMemberships?.data?.find((membership) => membership.organization.id === organization?.id)?.id;
   const tasks = useQuery({ queryKey: ['mobile-tasks', organization?.id, projectId, membershipId], enabled: Boolean(organization?.id && membershipId), queryFn: async () => mobileApi.tasks((await getToken()) || '', { projectId: projectId || undefined, assigneeMembershipId: membershipId }) });
   const projects = useQuery({ queryKey: ['mobile-projects', organization?.id], enabled: Boolean(organization?.id), queryFn: async () => mobileApi.projects((await getToken()) || '') });
