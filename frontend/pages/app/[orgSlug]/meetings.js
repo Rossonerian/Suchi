@@ -1,57 +1,43 @@
 import { useRouter } from 'next/router';
 import { useAuth } from '@clerk/nextjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiError, saasApi } from '../../../lib/api';
+import { formatMeetingTime, isoToLocalDateTime, localDateTimeToIso } from '../../../lib/meeting-time.mjs';
 import { WorkspaceFrame, FeatureDisabled, useClerkPageState } from '../../../components/saas/WorkspaceFrame';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
+import { Textarea } from '../../../components/ui/textarea';
 
 const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+function defaultZone() { return typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' : 'UTC'; }
+function emptyDraft() { return { title: '', description: '', startAt: '', endAt: '', timezone: defaultZone(), projectId: '', location: '', videoUrl: '', attendeeMembershipIds: [] }; }
+
+function MeetingRow({ meeting, onSelect }) {
+  const cancelled = meeting.status === 'cancelled';
+  return <li className={`rounded-lg border border-border p-4 ${cancelled ? 'opacity-70' : ''}`}>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-medium">{meeting.title}</p><p className="mt-1 text-sm text-muted-foreground">{formatMeetingTime(meeting.startAt, meeting.timezone)} – {new Date(meeting.endAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p></div><span className="rounded-md bg-muted px-2 py-1 text-xs font-medium uppercase tracking-wide">{cancelled ? 'Cancelled' : meeting.status || 'Scheduled'}</span></div>
+    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground"><span>{meeting.timezone || 'UTC'}</span>{meeting.attendeeCount ? <span>{meeting.attendeeCount} participant{meeting.attendeeCount === 1 ? '' : 's'}</span> : null}{meeting.location ? <span>{meeting.location}</span> : null}</div>
+    <div className="mt-3 flex flex-wrap gap-2">{meeting.videoUrl ? <a className="text-sm text-primary underline-offset-4 hover:underline" href={meeting.videoUrl} target="_blank" rel="noreferrer">Join meeting</a> : null}<Button size="sm" variant="outline" onClick={() => onSelect(meeting)}>{cancelled ? 'View details' : 'Edit meeting'}</Button></div>
+  </li>;
+}
 
 function MeetingsContent({ orgSlug }) {
-  const auth = useAuth();
-  const { getToken } = auth;
-  const { status } = useClerkPageState(auth);
-  const [meetings, setMeetings] = useState([]);
-  const [title, setTitle] = useState('');
-  const [startAt, setStartAt] = useState('');
-  const [endAt, setEndAt] = useState('');
-  const [timezone, setTimezone] = useState('UTC');
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (status) return undefined;
-    let active = true;
-    getToken().then((token) => saasApi.listMeetings({}, token)).then((result) => { if (active) setMeetings(result.meetings || []); }).catch((err) => { if (active) setError(err instanceof ApiError ? err.message : 'Meetings are unavailable.'); });
-    return () => { active = false; };
-  }, [getToken, status]);
-
-  async function schedule(event) {
-    event.preventDefault(); setSaving(true); setError('');
-    try {
-      const token = await getToken();
-      const result = await saasApi.createMeeting({ title, startAt: new Date(startAt).toISOString(), endAt: new Date(endAt).toISOString(), timezone }, token);
-      setMeetings((current) => [...current, result.meeting].sort((a, b) => new Date(a.startAt) - new Date(b.startAt)));
-      setTitle(''); setStartAt(''); setEndAt(''); toast.success('Meeting scheduled');
-    } catch (err) { setError(err instanceof ApiError ? err.message : 'Unable to schedule the meeting.'); } finally { setSaving(false); }
-  }
-
-  return <WorkspaceFrame orgSlug={orgSlug} active="Meetings">
-    <div className="flex flex-col gap-2"><h2 className="text-2xl font-semibold">Meetings</h2><p className="muted">Schedule meetings for this organization; calendar sync can be connected separately.</p></div>
-    {status && <p className="muted" role="status">{status}</p>}
-    {!status && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
-      <Card><CardHeader><CardTitle>Upcoming meetings</CardTitle><CardDescription>{meetings.length ? `${meetings.length} scheduled meeting${meetings.length === 1 ? '' : 's'}` : 'No meetings are scheduled yet.'}</CardDescription></CardHeader><CardContent>{meetings.length ? <ul className="grid gap-3" aria-label="Scheduled meetings">{meetings.map((meeting) => <li key={meeting.id} className="rounded-md border border-border p-3"><p className="font-medium">{meeting.title}</p><p className="text-sm text-muted-foreground">{new Date(meeting.startAt).toLocaleString()} – {new Date(meeting.endAt).toLocaleTimeString()} ({meeting.timezone})</p><p className="mt-1 text-xs uppercase text-muted-foreground">{meeting.status || 'scheduled'}</p></li>)}</ul> : <p className="muted">Create a meeting to give your team a shared next step.</p>}</CardContent></Card>
-      <Card><CardHeader><CardTitle>Schedule meeting</CardTitle><CardDescription>Use your local time; the timezone is stored with the meeting.</CardDescription></CardHeader><CardContent><form className="grid gap-4" onSubmit={schedule}><div className="grid gap-2"><Label htmlFor="meeting-title">Title</Label><Input id="meeting-title" value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={240} /></div><div className="grid gap-2"><Label htmlFor="meeting-start">Starts</Label><Input id="meeting-start" type="datetime-local" value={startAt} onChange={(event) => setStartAt(event.target.value)} required /></div><div className="grid gap-2"><Label htmlFor="meeting-end">Ends</Label><Input id="meeting-end" type="datetime-local" value={endAt} onChange={(event) => setEndAt(event.target.value)} required /></div><div className="grid gap-2"><Label htmlFor="meeting-timezone">Timezone</Label><Input id="meeting-timezone" value={timezone} onChange={(event) => setTimezone(event.target.value)} required maxLength={80} /></div><Button type="submit" disabled={saving}>{saving ? 'Scheduling…' : 'Schedule meeting'}</Button>{error && <p className="text-sm text-destructive" role="alert">{error}</p>}</form></CardContent></Card>
-    </div>}
-  </WorkspaceFrame>;
+  const auth = useAuth(); const { getToken } = auth; const { status } = useClerkPageState(auth); const router = useRouter();
+  const [meetings, setMeetings] = useState([]); const [projects, setProjects] = useState([]); const [members, setMembers] = useState([]); const [draft, setDraft] = useState(emptyDraft); const [selected, setSelected] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [saving, setSaving] = useState(false);
+  async function load() { setLoading(true); setError(''); try { const token = await getToken(); const [meetingResult, projectResult, memberResult] = await Promise.all([saasApi.listMeetings({}, token), saasApi.listProjects(token), saasApi.listMembers(token)]); setMeetings(meetingResult.meetings || []); setProjects(projectResult.projects || []); setMembers(memberResult.members || []); } catch (err) { setError(err instanceof ApiError ? err.message : 'Meetings are unavailable.'); } finally { setLoading(false); } }
+  useEffect(() => { if (!status) load(); }, [getToken, status]);
+  useEffect(() => { const id = typeof router.query.meeting === 'string' ? router.query.meeting : ''; const meeting = meetings.find((item) => item.id === id); if (meeting) selectMeeting(meeting); }, [router.query.meeting, meetings]);
+  function setField(name, value) { setDraft((current) => ({ ...current, [name]: value })); }
+  function selectMeeting(meeting) { setSelected(meeting); setDraft({ title: meeting.title || '', description: meeting.description || '', startAt: isoToLocalDateTime(meeting.startAt, meeting.timezone), endAt: isoToLocalDateTime(meeting.endAt, meeting.timezone), timezone: meeting.timezone || 'UTC', projectId: meeting.projectId || '', location: meeting.location || '', videoUrl: meeting.videoUrl || '', attendeeMembershipIds: meeting.attendeeMembershipIds || [] }); }
+  function newMeeting() { setSelected(null); setDraft(emptyDraft()); }
+  function toggleAttendee(id) { setDraft((current) => ({ ...current, attendeeMembershipIds: current.attendeeMembershipIds.includes(id) ? current.attendeeMembershipIds.filter((value) => value !== id) : [...current.attendeeMembershipIds, id] })); }
+  async function save(event) { event.preventDefault(); setSaving(true); setError(''); try { const payload = { ...draft, projectId: draft.projectId || null, startAt: localDateTimeToIso(draft.startAt, draft.timezone), endAt: localDateTimeToIso(draft.endAt, draft.timezone) }; const token = await getToken(); const result = selected ? await saasApi.updateMeeting(selected.id, payload, token) : await saasApi.createMeeting(payload, token); setMeetings((current) => [...current.filter((item) => item.id !== result.meeting.id), result.meeting].sort((a, b) => new Date(a.startAt) - new Date(b.startAt))); setSelected(result.meeting); toast.success(selected ? 'Meeting updated' : 'Meeting scheduled'); } catch (err) { setError(err instanceof ApiError ? err.message : 'Unable to save the meeting.'); } finally { setSaving(false); } }
+  async function cancel() { if (!selected || !window.confirm(`Cancel “${selected.title}”?`)) return; setSaving(true); setError(''); try { const result = await saasApi.cancelMeeting(selected.id, await getToken()); setMeetings((current) => current.map((item) => item.id === selected.id ? result.meeting : item)); setSelected(result.meeting); toast.success('Meeting cancelled'); } catch (err) { setError(err instanceof ApiError ? err.message : 'Unable to cancel the meeting.'); } finally { setSaving(false); } }
+  const upcoming = useMemo(() => meetings.filter((meeting) => meeting.status !== 'cancelled' && new Date(meeting.endAt) >= new Date()), [meetings]);
+  return <WorkspaceFrame orgSlug={orgSlug} active="Meetings"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-2xl font-semibold">Meetings</h2><p className="muted mt-1">Coordinate the next conversation with your team.</p></div><Button onClick={newMeeting}>Schedule meeting</Button></div>{status && <p className="muted" role="status">{status}</p>}{!status && loading && <p className="muted" role="status" aria-busy="true">Loading meetings…</p>}{!status && !loading && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,25rem)]"><Card><CardHeader><CardTitle>Upcoming agenda</CardTitle><CardDescription>{upcoming.length ? `${upcoming.length} upcoming meeting${upcoming.length === 1 ? '' : 's'}` : 'Your schedule is clear.'}</CardDescription></CardHeader><CardContent>{error && <div className="mb-4 grid gap-2" role="alert"><p className="text-sm text-destructive">{error}</p><Button size="sm" variant="outline" onClick={load}>Retry</Button></div>}{meetings.length ? <ul className="grid gap-3" aria-label="Scheduled meetings">{meetings.map((meeting) => <MeetingRow key={meeting.id} meeting={meeting} onSelect={selectMeeting} />)}</ul> : <div className="rounded-lg border border-dashed border-border p-6 text-center"><p className="font-medium">No meetings scheduled</p><p className="muted mt-1">Schedule a meeting when your team needs a shared next step.</p><Button className="mt-4" onClick={newMeeting}>Schedule your first meeting</Button></div>}</CardContent></Card><Card><CardHeader><CardTitle>{selected ? 'Edit meeting' : 'Schedule meeting'}</CardTitle><CardDescription>Times are interpreted in the selected timezone and saved as an instant.</CardDescription></CardHeader><CardContent><form className="grid gap-4" onSubmit={save}><div className="grid gap-2"><Label htmlFor="meeting-title">Title</Label><Input id="meeting-title" value={draft.title} onChange={(event) => setField('title', event.target.value)} required maxLength={240} /></div><div className="grid gap-2"><Label htmlFor="meeting-description">Agenda</Label><Textarea id="meeting-description" value={draft.description} onChange={(event) => setField('description', event.target.value)} maxLength={20000} placeholder="What should this meeting accomplish?" /></div><div className="grid gap-4 sm:grid-cols-2"><div className="grid gap-2"><Label htmlFor="meeting-start">Starts</Label><Input id="meeting-start" type="datetime-local" value={draft.startAt} onChange={(event) => setField('startAt', event.target.value)} required /></div><div className="grid gap-2"><Label htmlFor="meeting-end">Ends</Label><Input id="meeting-end" type="datetime-local" value={draft.endAt} onChange={(event) => setField('endAt', event.target.value)} required /></div></div><div className="grid gap-2"><Label htmlFor="meeting-timezone">Timezone (IANA)</Label><Input id="meeting-timezone" value={draft.timezone} onChange={(event) => setField('timezone', event.target.value)} placeholder="Asia/Kolkata" required maxLength={80} /><p className="text-xs text-muted-foreground">Example: America/New_York, Europe/London, or Asia/Kolkata.</p></div><div className="grid gap-2"><Label htmlFor="meeting-project">Project (optional)</Label><select id="meeting-project" className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={draft.projectId} onChange={(event) => setField('projectId', event.target.value)}><option value="">No project</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></div><div className="grid gap-2"><Label htmlFor="meeting-location">Location or video link</Label><Input id="meeting-location" value={draft.location} onChange={(event) => setField('location', event.target.value)} placeholder="Room or location" /><Input aria-label="Video meeting link" value={draft.videoUrl} onChange={(event) => setField('videoUrl', event.target.value)} placeholder="https://…" /></div>{members.length ? <fieldset className="grid gap-2"><legend className="text-sm font-medium">Participants</legend><div className="grid max-h-32 gap-2 overflow-auto rounded-md border border-border p-2">{members.map((member) => <label key={member.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.attendeeMembershipIds.includes(member.id)} onChange={() => toggleAttendee(member.id)} />{member.displayName || member.email}</label>)}</div></fieldset> : null}<div className="flex flex-wrap gap-2"><Button type="submit" disabled={saving}>{saving ? 'Saving…' : selected ? 'Save changes' : 'Schedule meeting'}</Button>{selected && selected.status !== 'cancelled' ? <Button type="button" variant="destructive" onClick={cancel} disabled={saving}>Cancel meeting</Button> : null}{selected ? <Button type="button" variant="outline" onClick={newMeeting}>Clear</Button> : null}</div>{error && <p className="text-sm text-destructive" role="alert">{error}</p>}</form></CardContent></Card></div>}</WorkspaceFrame>;
 }
 
-export default function MeetingsPage() {
-  const { orgSlug } = useRouter().query;
-  if (!orgSlug || Array.isArray(orgSlug)) return <main className="loading-page"><p>Loading workspace…</p></main>;
-  return clerkEnabled ? <MeetingsContent orgSlug={orgSlug} /> : <FeatureDisabled orgSlug={orgSlug} />;
-}
+export default function MeetingsPage() { const { orgSlug } = useRouter().query; if (!orgSlug || Array.isArray(orgSlug)) return <main className="loading-page"><p>Loading workspace…</p></main>; return clerkEnabled ? <MeetingsContent orgSlug={orgSlug} /> : <FeatureDisabled orgSlug={orgSlug} />; }

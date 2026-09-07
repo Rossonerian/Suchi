@@ -25,6 +25,7 @@ export type Meeting = { id: string; title: string; startAt: string; endAt: strin
 export const mobileApi = {
   projects: (token: string) => apiRequest<{ projects: Project[] }>('/v1/projects', token),
   tasks: (token: string) => apiRequest<{ tasks: Task[] }>('/v1/tasks', token),
+  task: (token: string, id: string) => apiRequest<{ task: Task }>(`/v1/tasks/${encodeURIComponent(id)}`, token),
   createTask: (token: string, payload: { projectId: string; title: string; priority?: string; dueAt?: string | null }) => apiRequest<{ task: Task }>('/v1/tasks', token, { method: 'POST', body: JSON.stringify(payload) }),
   updateTask: (token: string, id: string, payload: Partial<Pick<Task, 'status' | 'priority'>>) => apiRequest<{ task: Task }>(`/v1/tasks/${encodeURIComponent(id)}`, token, { method: 'PATCH', body: JSON.stringify(payload) }),
   meetings: (token: string) => apiRequest<{ meetings: Meeting[] }>('/v1/meetings', token),

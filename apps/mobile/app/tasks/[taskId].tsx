@@ -1,0 +1,14 @@
+import { useAuth } from '@clerk/expo';
+import { useLocalSearchParams, Link } from 'expo-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { mobileApi } from '../../src/api';
+import { MobileNav } from '../../src/MobileNav';
+
+export default function TaskDetailScreen() {
+  const { getToken } = useAuth(); const { taskId } = useLocalSearchParams<{ taskId: string }>(); const queryClient = useQueryClient(); const query = useQuery({ queryKey: ['mobile-task', taskId], queryFn: async () => mobileApi.task((await getToken()) || '', taskId) });
+  const update = useMutation({ mutationFn: async (status: string) => mobileApi.updateTask((await getToken()) || '', taskId, { status }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mobile-task', taskId] }) });
+  if (query.isPending) return <View className="flex-1 items-center justify-center bg-background"><ActivityIndicator /></View>;
+  if (query.isError) return <View className="flex-1 items-center justify-center bg-background px-6"><Text className="mb-4 text-center text-red-700">{query.error.message}</Text><Pressable accessibilityRole="button" className="rounded-md border border-border px-4 py-3" onPress={() => query.refetch()}><Text className="text-foreground">Try again</Text></Pressable></View>;
+  const task = query.data.task; return <View className="flex-1 bg-background"><ScrollView className="px-5 pt-14" contentContainerStyle={{ paddingBottom: 96 }}><Link href="/tasks" className="mb-5 text-primary">← My Work</Link><Text className="text-xs font-semibold uppercase tracking-wide text-muted">Task detail</Text><Text className="mt-2 text-2xl font-bold text-foreground">{task.title}</Text><View className="mt-6 rounded-lg border border-border bg-background p-4"><Text className="text-sm text-muted">Status</Text><Text className="mt-1 font-semibold text-foreground">{task.status}</Text><Text className="mt-4 text-sm text-muted">Priority</Text><Text className="mt-1 font-semibold text-foreground">{task.priority}</Text>{task.dueAt ? <><Text className="mt-4 text-sm text-muted">Due</Text><Text className="mt-1 font-semibold text-foreground">{new Date(task.dueAt).toLocaleString()}</Text></> : null}<Pressable accessibilityRole="button" accessibilityLabel={task.status === 'done' ? 'Reopen task' : 'Mark task done'} className="mt-6 min-h-11 items-center justify-center rounded-md bg-primary" onPress={() => update.mutate(task.status === 'done' ? 'todo' : 'done')} disabled={update.isPending}><Text className="font-semibold text-white">{update.isPending ? 'Saving…' : task.status === 'done' ? 'Reopen task' : 'Mark done'}</Text></Pressable>{update.isError ? <Text accessibilityRole="alert" className="mt-3 text-red-700">{update.error.message}</Text> : null}</View></ScrollView><MobileNav /></View>;
+}

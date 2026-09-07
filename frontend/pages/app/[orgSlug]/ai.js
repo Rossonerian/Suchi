@@ -1,8 +1,10 @@
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '@clerk/nextjs';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ApiError, saasApi } from '../../../lib/api';
+import { proposalFields } from '../../../lib/ai-proposals.mjs';
 import { WorkspaceFrame, FeatureDisabled, useClerkPageState } from '../../../components/saas/WorkspaceFrame';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
@@ -10,58 +12,18 @@ import { Label } from '../../../components/ui/label';
 
 const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
+function ProposalCard({ proposal, orgSlug, busy, onConfirm, onDiscard }) {
+  const fields = proposalFields(proposal);
+  const project = fields.find((field) => field.key === 'projectId');
+  return <article className="rounded-lg border border-primary/40 bg-primary/5 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-medium">{proposal.operation === 'create_task' ? 'Create task' : proposal.operation || 'Proposed change'}</p><p className="mt-1 text-sm text-muted-foreground">Review every field before writing to {project ? `project ${project.value}` : 'this workspace'}.</p></div><span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium">Needs approval</span></div><dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">{fields.map((field) => <div key={field.key} className="rounded-md border border-border bg-background/70 p-2"><dt className="text-xs text-muted-foreground">{field.label}</dt><dd className="mt-1 break-words font-medium">{field.value}</dd></div>)}</dl><p className="mt-3 text-xs text-muted-foreground">AI proposals are suggestions, not completed actions. Confirming may notify people or change due dates.</p><div className="mt-4 flex flex-wrap gap-2"><Button onClick={() => onConfirm(proposal)} disabled={busy}>Confirm change</Button><Button variant="outline" onClick={() => onDiscard(proposal)} disabled={busy}>Discard</Button>{fields.find((field) => field.key === 'projectId') ? <Link className="inline-flex min-h-8 items-center rounded-lg px-2.5 text-sm text-primary underline-offset-4 hover:underline" href={`/app/${orgSlug}/projects/${project.value}`}>Open project</Link> : null}</div></article>;
+}
+
 function AiContent({ orgSlug }) {
-  const auth = useAuth();
-  const { getToken } = auth;
-  const { status } = useClerkPageState(auth);
-  const [question, setQuestion] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [proposals, setProposals] = useState([]);
-  const [conversationId, setConversationId] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-
-  async function ask(event) {
-    event.preventDefault();
-    if (!question.trim() || busy) return;
-    setBusy(true); setError('');
-    const submitted = question.trim();
-    setMessages((current) => [...current, { role: 'user', content: submitted }]); setQuestion('');
-    try {
-      const token = await getToken();
-      const result = await saasApi.askAi({ question: submitted, conversationId: conversationId || undefined }, token);
-      setConversationId(result.conversationId || '');
-      setMessages((current) => [...current, { role: 'assistant', content: result.answer || 'No answer was returned.' }]);
-      setProposals((current) => [...current, ...(result.proposals || [])]);
-    } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'The assistant is unavailable.';
-      setError(message); toast.error(message);
-    } finally { setBusy(false); }
-  }
-
-  async function confirm(proposal) {
-    setBusy(true); setError('');
-    try {
-      const token = await getToken();
-      const result = await saasApi.confirmAiWrite(proposal.confirmationToken, token);
-      setProposals((current) => current.filter((item) => item !== proposal));
-      setMessages((current) => [...current, { role: 'assistant', content: `Created “${result.task?.title || 'task'}”.` }]);
-      toast.success('AI task created');
-    } catch (err) { const message = err instanceof ApiError ? err.message : 'Unable to confirm this change.'; setError(message); toast.error(message); } finally { setBusy(false); }
-  }
-
-  return <WorkspaceFrame orgSlug={orgSlug} active="AI Assistant">
-    <div className="flex flex-col gap-2"><h2 className="text-2xl font-semibold">AI Assistant</h2><p className="muted">Ask about authorized workspace data. Proposed changes always require your confirmation.</p></div>
-    {status && <p className="muted" role="status">{status}</p>}
-    {!status && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
-      <Card><CardHeader><CardTitle>Ask about your work</CardTitle><CardDescription>Try “What tasks are overdue?” or “What changed since yesterday?”</CardDescription></CardHeader><CardContent><div aria-live="polite" className="mb-4 grid gap-3" aria-label="Assistant conversation">{messages.length ? messages.map((message, index) => <div key={`${message.role}-${index}`} className={`rounded-md border p-3 text-sm ${message.role === 'user' ? 'ml-6 border-primary/30 bg-primary/5' : 'mr-6 border-border bg-muted/40'}`}><p className="mb-1 text-xs font-medium uppercase text-muted-foreground">{message.role === 'user' ? 'You' : 'Assistant'}</p><p className="whitespace-pre-wrap">{message.content}</p></div>) : <p className="muted">Your conversation will appear here.</p>}</div><form className="grid gap-3" onSubmit={ask}><Label htmlFor="ai-question">Question</Label><textarea id="ai-question" className="min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask a question about this workspace…" maxLength={4000} disabled={busy} /><Button type="submit" disabled={busy || !question.trim()}>{busy ? 'Thinking…' : 'Ask assistant'}</Button>{error && <p className="text-sm text-destructive" role="alert">{error}</p>}</form></CardContent></Card>
-      <Card><CardHeader><CardTitle>Pending changes</CardTitle><CardDescription>Review each AI proposal before it writes to the workspace.</CardDescription></CardHeader><CardContent>{proposals.length ? <div className="grid gap-3">{proposals.map((proposal, index) => <div className="rounded-md border border-border p-3" key={`${proposal.operation}-${index}`}><p className="font-medium">Create task</p><p className="mt-1 text-sm text-muted-foreground">{proposal.arguments?.title}</p><Button className="mt-3" onClick={() => confirm(proposal)} disabled={busy}>Confirm create</Button></div>)}</div> : <p className="muted">No changes are waiting for approval.</p>}</CardContent></Card>
-    </div>}
-  </WorkspaceFrame>;
+  const auth = useAuth(); const { getToken } = auth; const { status } = useClerkPageState(auth); const [question, setQuestion] = useState(''); const [messages, setMessages] = useState([]); const [proposals, setProposals] = useState([]); const [conversationId, setConversationId] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+  async function ask(event) { event.preventDefault(); if (!question.trim() || busy) return; setBusy(true); setError(''); const submitted = question.trim(); setMessages((current) => [...current, { role: 'user', content: submitted }]); setQuestion(''); try { const result = await saasApi.askAi({ question: submitted, conversationId: conversationId || undefined }, await getToken()); setConversationId(result.conversationId || ''); setMessages((current) => [...current, { role: 'assistant', content: result.answer || 'No answer was returned.' }]); setProposals((current) => [...current, ...(result.proposals || [])]); } catch (err) { const message = err instanceof ApiError ? err.message : 'The assistant is unavailable.'; setError(message); toast.error(message); } finally { setBusy(false); } }
+  async function confirm(proposal) { setBusy(true); setError(''); try { const result = await saasApi.confirmAiWrite(proposal.confirmationToken, await getToken()); setProposals((current) => current.filter((item) => item !== proposal)); const id = result.task?.id; setMessages((current) => [...current, { role: 'assistant', content: id ? `Created “${result.task?.title || 'task'}”.` : 'The proposed change was completed.' , href: id ? `/app/${orgSlug}/tasks?task=${encodeURIComponent(id)}` : null }]); toast.success('AI change completed'); } catch (err) { const message = err instanceof ApiError ? err.message : 'Unable to confirm this change.'; setError(message); toast.error(message); } finally { setBusy(false); } }
+  function discard(proposal) { setProposals((current) => current.filter((item) => item !== proposal)); toast.success('Proposal discarded'); }
+  return <WorkspaceFrame orgSlug={orgSlug} active="AI Assistant"><div><h2 className="text-2xl font-semibold">AI Assistant</h2><p className="muted mt-1">Ask questions about this workspace. Answers use only authorized data; proposed writes always wait for your approval.</p></div>{status && <p className="muted" role="status">{status}</p>}{!status && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]"><Card><CardHeader><CardTitle>Ask about your work</CardTitle><CardDescription>Try “What is at risk this week?” or “Prepare me for tomorrow’s meetings.”</CardDescription></CardHeader><CardContent><div aria-live="polite" className="mb-4 grid gap-3" aria-label="Assistant conversation">{messages.length ? messages.map((message, index) => <div key={`${message.role}-${index}`} className={`rounded-lg border p-3 text-sm ${message.role === 'user' ? 'ml-6 border-primary/30 bg-primary/5' : 'mr-6 border-border bg-muted/40'}`}><p className="mb-1 text-xs font-medium uppercase text-muted-foreground">{message.role === 'user' ? 'You' : 'Assistant'}</p><p className="whitespace-pre-wrap">{message.content}</p>{message.href ? <Link className="mt-2 inline-block text-primary underline-offset-4 hover:underline" href={message.href}>Open created task</Link> : null}</div>) : <p className="muted">Your conversation will appear here.</p>}</div><form className="grid gap-3" onSubmit={ask}><Label htmlFor="ai-question">Question</Label><textarea id="ai-question" className="min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask a question about this workspace…" maxLength={4000} disabled={busy} /><Button type="submit" disabled={busy || !question.trim()}>{busy ? 'Thinking…' : 'Ask assistant'}</Button>{error && <p className="text-sm text-destructive" role="alert">{error}</p>}</form></CardContent></Card><Card><CardHeader><CardTitle>Review changes</CardTitle><CardDescription>{proposals.length ? `${proposals.length} proposal${proposals.length === 1 ? '' : 's'} waiting for approval.` : 'Nothing will be changed without your confirmation.'}</CardDescription></CardHeader><CardContent>{proposals.length ? <div className="grid gap-3">{proposals.map((proposal, index) => <ProposalCard key={`${proposal.confirmationToken || proposal.operation}-${index}`} proposal={proposal} orgSlug={orgSlug} busy={busy} onConfirm={confirm} onDiscard={discard} />)}</div> : <p className="muted">No pending changes.</p>}</CardContent></Card></div>}</WorkspaceFrame>;
 }
 
-export default function AiPage() {
-  const { orgSlug } = useRouter().query;
-  if (!orgSlug || Array.isArray(orgSlug)) return <main className="loading-page"><p>Loading workspace…</p></main>;
-  return clerkEnabled ? <AiContent orgSlug={orgSlug} /> : <FeatureDisabled orgSlug={orgSlug} />;
-}
+export default function AiPage() { const { orgSlug } = useRouter().query; if (!orgSlug || Array.isArray(orgSlug)) return <main className="loading-page"><p>Loading workspace…</p></main>; return clerkEnabled ? <AiContent orgSlug={orgSlug} /> : <FeatureDisabled orgSlug={orgSlug} />; }
