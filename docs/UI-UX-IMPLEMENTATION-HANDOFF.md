@@ -143,11 +143,17 @@ but no mobile app can authenticate without the Clerk mobile key.
 
 ## Clerk authentication gate attempt
 
-- `frontend/.env.local` has no `NEXT_PUBLIC_AUTH_PROVIDER` or
-  `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`.
-- `backend/.env` has no `AUTH_PROVIDER` or `CLERK_SECRET_KEY`.
-- `apps/mobile/.env` is absent, so `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` and
-  `EXPO_PUBLIC_API_URL` are not configured.
+- `backend/.env` now contains a Clerk secret key. A read-only Clerk API probe
+  reached the development instance and returned
+  `organization_not_enabled_in_instance`, so the key was not exposed and the
+  remaining blocker is the instance capability rather than an auth bypass.
+- `backend/.env` still needs `AUTH_PROVIDER=clerk` for the SaaS process.
+- `frontend/.env.local` has a publishable-key line with whitespace in the
+  variable name and has no `NEXT_PUBLIC_AUTH_PROVIDER=clerk`; Next.js will not
+  recognize that configuration as written.
+- `apps/mobile/.env` is absent. A publishable-key value was placed in the
+  tracked `.env.example` instead; that user-owned change was not modified or
+  committed.
 - The SaaS backend started against the disposable PostgreSQL database: health
   returned `200`, while protected SaaS requests correctly returned
   `503 AUTH_PROVIDER_UNAVAILABLE` rather than accepting an unauthenticated
@@ -157,7 +163,8 @@ but no mobile app can authenticate without the Clerk mobile key.
 - The API 35 `NIDAR_Runtime_API35` emulator was re-booted successfully, but no
   mobile app session or authenticated organization data could be exercised.
 - No Clerk users, organizations, or seeded fixture rows were created because
-  real development IDs were not available.
+  Organizations are disabled in the current Clerk development instance and
+  the runtime IDs are not available.
 
 ## Smallest external setup required to unblock the release gate
 
