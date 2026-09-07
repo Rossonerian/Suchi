@@ -80,3 +80,72 @@ No lint warnings remain. No backend, production data, external credentials, or d
 ## Production assessment
 
 The implementation materially improves the Astra P0/P1 baseline and is independently buildable, but it is **not yet production-ready** until authenticated browser/device verification is performed with safe development credentials and the remaining provider/runtime evidence is collected.
+
+# Real Runtime Verification
+
+Date: 2026-09-07
+
+This release-gate pass did not weaken authentication or use production data. The
+local checkout has a legacy MongoDB/SMTP development environment, but it has no
+SaaS PostgreSQL database URL, Clerk development credentials, Google Calendar
+OAuth credentials, OpenRouter key, Expo Clerk configuration, or connected
+emulator/device. Provider tests use injected test doubles only; they are not
+evidence of live-provider success.
+
+| Capability | Unit | Integration | Browser | Mobile | Live provider | Status |
+| ---------- | ---- | ----------- | ------- | ------ | ------------- | ------ |
+| Clerk authentication and onboarding | VERIFIED | PARTIAL | PARTIAL | BLOCKED | NOT APPLICABLE | BLOCKED |
+| Tenant switching and isolation | VERIFIED | VERIFIED | BLOCKED | BLOCKED | NOT APPLICABLE | BLOCKED |
+| Projects and task lifecycle | VERIFIED | VERIFIED | BLOCKED | BLOCKED | NOT APPLICABLE | PARTIAL |
+| Meeting time handling | VERIFIED | VERIFIED | BLOCKED | BLOCKED | BLOCKED | PARTIAL |
+| Notifications and resource links | PARTIAL | VERIFIED | PARTIAL | BLOCKED | BLOCKED | PARTIAL |
+| AI proposal safety | VERIFIED | PARTIAL | BLOCKED | BLOCKED | BLOCKED | PARTIAL |
+| Google Calendar | VERIFIED | VERIFIED | BLOCKED | NOT APPLICABLE | BLOCKED | PARTIAL |
+| Expo mobile workflow | VERIFIED | NOT APPLICABLE | NOT APPLICABLE | BLOCKED | BLOCKED | PARTIAL |
+| Mobile push deep links | PARTIAL | NOT APPLICABLE | NOT APPLICABLE | BLOCKED | BLOCKED | PARTIAL |
+
+Evidence: Clerk context/workspace tests and unconfigured route guards pass, but
+no signed-in Clerk session exists. Backend tenant tests cover projects, tasks,
+meetings, and notifications. Task filters/form behavior and AI confirmation
+helpers are unit-covered. Google Calendar and provider-call tests use injected
+test doubles. Firefox/Playwright rendered the sign-in and unauthenticated
+workspace access gate, not populated workspace content. The Expo typecheck,
+lint, and current-route test pass, while `adb devices` reports no device.
+
+## Runtime observations from this pass
+
+- Firefox/Playwright against the local production frontend verified `/`,
+  `/app/acme`, `/app/acme/my-work`, `/app/acme/projects`, `/app/acme/tasks`,
+  `/app/acme/calendar`, `/app/acme/notifications`, `/app/acme/ai`, and
+  `/app/acme/settings`. The SaaS routes rendered the intentional
+  **Workspace access is unavailable** state, not migration placeholders; the
+  navigation links were named. This is an unauthenticated configuration check,
+  not populated-workspace evidence.
+- A mobile notification could leave an already mounted Tasks screen scoped to
+  the previous project. `bffdbf3` now makes the current Expo Router parameter
+  authoritative; `ffd1417` adds a focused regression test.
+- No source-level P0 tenant-state regression was found in the final read-only
+  supervisor review. The search and notification reset effects are keyed by
+  `orgSlug`, and `WorkspaceGate` prevents tenant data consumers from mounting
+  before the route organization is active.
+
+## Smallest external setup required to unblock the release gate
+
+1. Create or select a **Clerk development** instance with Organizations
+   enabled. Configure `NEXT_PUBLIC_AUTH_PROVIDER=clerk` and
+   `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` for the frontend, `AUTH_PROVIDER=clerk`
+   and `CLERK_SECRET_KEY` for the backend process, and
+   `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` for Expo. Create only disposable users
+   and Alpha/Beta organizations.
+2. Supply a disposable PostgreSQL `DATABASE_URL` to the backend and apply the
+   checked-in SaaS schema/migrations. Do not use the legacy MongoDB database
+   or production data for this evidence.
+3. For live calendar evidence, configure a disposable Google OAuth client with
+   `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and the configured local
+   `GOOGLE_REDIRECT_URI`, then use a disposable development calendar.
+4. For live AI evidence, configure a development-only `OPENROUTER_API_KEY`
+   with a low-cost approved model.
+5. For native evidence, supply `EXPO_PUBLIC_API_URL` and the Expo Clerk key to
+   a development build, attach an Android/iOS emulator or device, and configure
+   a development Expo push channel for foreground, background, and cold-start
+   verification.
