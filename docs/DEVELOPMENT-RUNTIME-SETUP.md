@@ -49,12 +49,16 @@ CORS_ORIGIN=http://localhost:<frontend-port>
 FRONTEND_URL=http://localhost:<frontend-port>
 DATABASE_URL=postgresql://<development-user>:<development-password>@127.0.0.1:<postgres-port>/<development-database>
 AUTH_PROVIDER=clerk
+CLERK_PUBLISHABLE_KEY=<same-clerk-development-publishable-key>
 CLERK_SECRET_KEY=<clerk-development-secret-key>
 AI_CONFIRMATION_SECRET=<development-random-secret>
 ```
 
 `AI_CONFIRMATION_SECRET` is required for server-side AI write confirmations.
 It must never be exposed to web or Expo variables.
+`CLERK_PUBLISHABLE_KEY` is required by `@clerk/express` in addition to the
+secret key; it is the same public development key used by the web and mobile
+clients.
 
 ### Google Calendar — backend only
 

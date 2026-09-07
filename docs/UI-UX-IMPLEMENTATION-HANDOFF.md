@@ -147,7 +147,9 @@ but no mobile app can authenticate without the Clerk mobile key.
   reached the development instance and returned
   `organization_not_enabled_in_instance`, so the key was not exposed and the
   remaining blocker is the instance capability rather than an auth bypass.
-- `backend/.env` still needs `AUTH_PROVIDER=clerk` for the SaaS process.
+- `backend/.env` still needs `AUTH_PROVIDER=clerk` and
+  `CLERK_PUBLISHABLE_KEY` for the SaaS process; `@clerk/express` requires both
+  the publishable and secret keys.
 - `frontend/.env.local` has a publishable-key line with whitespace in the
   variable name and has no `NEXT_PUBLIC_AUTH_PROVIDER=clerk`; Next.js will not
   recognize that configuration as written.
