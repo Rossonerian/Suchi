@@ -1,15 +1,37 @@
 export const TASK_STATUSES = ['backlog', 'todo', 'in_progress', 'blocked', 'review', 'done', 'cancelled'];
 export const TASK_PRIORITIES = ['none', 'low', 'medium', 'high', 'urgent'];
 
-export function filterSaasTasks(tasks = [], { query = '', status = 'all', priority = 'all', projectId = 'all' } = {}) {
+export function filterSaasTasks(tasks = [], {
+  query = '',
+  status = 'all',
+  priority = 'all',
+  projectId = 'all',
+  due = 'all',
+  overdue = false,
+  now = new Date(),
+} = {}) {
   const needle = query.trim().toLowerCase();
   return tasks.filter((task) => {
     if (status !== 'all' && task.status !== status) return false;
     if (priority !== 'all' && task.priority !== priority) return false;
     if (projectId !== 'all' && task.projectId !== projectId) return false;
+    if (due === 'today' && !isDueToday(task, now)) return false;
+    if (overdue && !isOverdue(task, now)) return false;
     if (!needle) return true;
     return [task.title, task.description].filter(Boolean).some((value) => String(value).toLowerCase().includes(needle));
   });
+}
+
+export function taskFiltersFromQuery(query = {}) {
+  const value = (key) => typeof query[key] === 'string' ? query[key] : '';
+  return {
+    query: value('q'),
+    status: value('status') || 'all',
+    priority: value('priority') || 'all',
+    projectId: value('project') || 'all',
+    due: value('due') || 'all',
+    overdue: value('overdue') === 'true',
+  };
 }
 
 export function dateInputToIso(value) {

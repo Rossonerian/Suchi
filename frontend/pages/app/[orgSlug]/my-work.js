@@ -19,7 +19,8 @@ function WorkGroup({ title, description, tasks, orgSlug }) {
 
 function MyWorkContent({ orgSlug }) {
   const auth = useAuth();
-  const { status } = useClerkPageState(auth);
+  const { getToken, userId } = auth;
+  const { status } = useClerkPageState(auth, orgSlug);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,10 +31,10 @@ function MyWorkContent({ orgSlug }) {
     async function load() {
       setLoading(true); setError('');
       try {
-        const token = await auth.getToken();
+        const token = await getToken();
         const membersResult = await saasApi.listMembers(token);
-        const membership = (membersResult.members || []).find((member) => member.userId === auth.userId);
-        if (!membership) { if (active) setTasks([]); return; }
+        const membership = (membersResult.members || []).find((member) => member.userId === userId);
+        if (!membership) { if (active) { setTasks([]); setError('Your membership in this workspace could not be resolved.'); } return; }
         const result = await saasApi.listTasks({ assigneeMembershipId: membership.id }, token);
         if (active) setTasks(result.tasks || []);
       } catch (err) { if (active) setError(err instanceof ApiError ? err.message : 'Your work is unavailable.'); }
@@ -41,7 +42,7 @@ function MyWorkContent({ orgSlug }) {
     }
     load();
     return () => { active = false; };
-  }, [auth, status]);
+  }, [getToken, userId, status]);
 
   const groups = useMemo(() => {
     const now = new Date();

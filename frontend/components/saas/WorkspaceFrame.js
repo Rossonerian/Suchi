@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
 import { ApiError, saasApi } from '../../lib/api';
+import { workspaceContextState } from '../../lib/workspace-context.mjs';
 
 const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk'
   && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
@@ -56,9 +57,9 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
           <Button id="workspace-navigation-trigger" type="button" className="workspace-mobile-trigger" variant="outline" size="icon" aria-label="Open workspace navigation" onClick={() => setMobileOpen(true)}><Menu aria-hidden="true" /></Button>
           <div><p className="eyebrow">WORKSPACE</p><h1>{orgSlug || 'Workspace'}</h1></div>
         </div>
-        {clerkEnabled && <div className="workspace-topbar-actions"><WorkspaceContext orgSlug={orgSlug} /><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter /><OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/onboarding" /></div>}
+        {clerkEnabled && <div className="workspace-topbar-actions"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter /><OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/onboarding" /></div>}
       </header>
-      <main className="workspace-content">{children}</main>
+      <main className="workspace-content">{clerkEnabled ? <WorkspaceGate orgSlug={orgSlug}>{children}</WorkspaceGate> : children}</main>
     </div>
     <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
       <SheetContent side="left" className="workspace-mobile-sheet">
@@ -70,20 +71,42 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
   </div>;
 }
 
-function WorkspaceBrand({ orgSlug }) {
-  return <div className="workspace-brand"><span className="workspace-brand-mark" aria-hidden="true">A</span><div><p className="eyebrow">ASTRA WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div></div>;
-}
-
-function WorkspaceContext({ orgSlug }) {
+/**
+ * Do not mount workspace data consumers until Clerk has activated the
+ * organization represented by the URL. Without this gate a fast navigation
+ * from /app/acme to /app/beta can issue the first request with Acme's token
+ * and briefly render the wrong tenant's data under Beta's heading.
+ */
+function WorkspaceGate({ orgSlug, children }) {
   const { organization } = useOrganization();
   const { isLoaded, userMemberships, setActive } = useOrganizationList({ userMemberships: { pageSize: 50 } });
-  const membership = userMemberships?.data?.find((item) => item.organization.slug === orgSlug || item.organization.id === orgSlug);
+  const state = workspaceContextState({
+    isLoaded,
+    organization,
+    memberships: userMemberships?.data || [],
+    orgSlug,
+  });
+  const [switchError, setSwitchError] = useState('');
+
   useEffect(() => {
-    if (!isLoaded || !membership || organization?.id === membership.organization.id) return;
-    setActive?.({ organization: membership.organization.id });
-  }, [isLoaded, membership, organization?.id, setActive]);
-  if (!isLoaded || !membership || !organization || organization.id === membership.organization.id) return null;
-  return <p className="text-xs text-muted-foreground" role="status">Switching to {membership.organization.name}…</p>;
+    setSwitchError('');
+    if (!state.membership || !organization || organization.id === state.membership.organization.id) return undefined;
+
+    let active = true;
+    Promise.resolve(setActive?.({ organization: state.membership.organization.id }))
+      .catch(() => {
+        if (active) setSwitchError('This workspace could not be activated. Try switching organizations again.');
+      });
+    return () => { active = false; };
+  }, [organization, setActive, state.membership]);
+
+  if (switchError) return <p className="muted" role="alert">{switchError}</p>;
+  if (!state.ready) return <p className="muted" role="status" aria-busy="true">{state.status}</p>;
+  return children;
+}
+
+function WorkspaceBrand({ orgSlug }) {
+  return <div className="workspace-brand"><span className="workspace-brand-mark" aria-hidden="true">A</span><div><p className="eyebrow">ASTRA WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div></div>;
 }
 
 function WorkspaceNavigation({ orgSlug, active, onNavigate }) {
@@ -142,8 +165,22 @@ export function FeatureDisabled({ orgSlug }) {
   </WorkspaceFrame>;
 }
 
-export function useClerkPageState(auth) {
+export function useClerkPageState(auth, orgSlug) {
+  const workspace = useWorkspaceState(orgSlug);
   if (!auth.isLoaded) return { status: 'Loading your session…' };
   if (!auth.isSignedIn) return { status: 'Sign in to open this workspace.' };
-  return { status: '' };
+  if (orgSlug && !workspace.ready) return { status: workspace.status };
+  return { status: '', workspace };
+}
+
+export function useWorkspaceState(orgSlug) {
+  const { organization } = useOrganization();
+  const { isLoaded, userMemberships } = useOrganizationList({ userMemberships: { pageSize: 50 } });
+  if (!orgSlug) return { ready: true, status: '' };
+  return workspaceContextState({
+    isLoaded,
+    organization,
+    memberships: userMemberships?.data || [],
+    orgSlug,
+  });
 }

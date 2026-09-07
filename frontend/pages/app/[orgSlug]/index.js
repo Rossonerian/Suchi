@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '@clerk/nextjs';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApiError, saasApi } from '../../../lib/api';
 import { WorkspaceFrame, FeatureDisabled, useClerkPageState } from '../../../components/saas/WorkspaceFrame';
 import { Button } from '../../../components/ui/button';
@@ -11,10 +11,10 @@ import { isDueToday, isOverdue } from '../../../lib/saas-task-utils.mjs';
 const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
 function HomeContent({ orgSlug }) {
-  const auth = useAuth(); const { status } = useClerkPageState(auth);
+  const auth = useAuth(); const { getToken } = auth; const { status } = useClerkPageState(auth, orgSlug);
   const [projects, setProjects] = useState([]); const [tasks, setTasks] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
-  async function load() { setLoading(true); setError(''); try { const token = await auth.getToken(); const [projectResult, taskResult] = await Promise.all([saasApi.listProjects(token), saasApi.listTasks({}, token)]); setProjects(projectResult.projects || []); setTasks(taskResult.tasks || []); } catch (err) { setError(err instanceof ApiError ? err.message : 'Workspace data is unavailable.'); } finally { setLoading(false); } }
-  useEffect(() => { if (!status) load(); }, [auth, status]);
+  const load = useCallback(async () => { setLoading(true); setError(''); try { const token = await getToken(); const [projectResult, taskResult] = await Promise.all([saasApi.listProjects(token), saasApi.listTasks({}, token)]); setProjects(projectResult.projects || []); setTasks(taskResult.tasks || []); } catch (err) { setError(err instanceof ApiError ? err.message : 'Workspace data is unavailable.'); } finally { setLoading(false); } }, [getToken]);
+  useEffect(() => { if (!status) load(); }, [load, status]);
   const projectById = useMemo(() => new Map(projects.map((project) => [project.id, project.name])), [projects]);
   const overdue = tasks.filter((task) => isOverdue(task)); const dueToday = tasks.filter((task) => isDueToday(task)); const blocked = tasks.filter((task) => task.status === 'blocked'); const next = tasks.filter((task) => !['done', 'cancelled'].includes(task.status)).sort((a, b) => new Date(a.dueAt || '9999-12-31') - new Date(b.dueAt || '9999-12-31')).slice(0, 6);
   if (status) return <WorkspaceFrame orgSlug={orgSlug} active="Home"><p className="muted" role="status">{status}</p></WorkspaceFrame>;

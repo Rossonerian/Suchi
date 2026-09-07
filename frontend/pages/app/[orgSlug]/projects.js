@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '@clerk/nextjs';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ApiError, saasApi } from '../../../lib/api';
 import { WorkspaceFrame, FeatureDisabled, useClerkPageState } from '../../../components/saas/WorkspaceFrame';
 import { Button } from '../../../components/ui/button';
@@ -53,19 +53,19 @@ function CreateProjectDialog({ onCreated }) {
 function ProjectsContent({ orgSlug }) {
   const auth = useAuth();
   const { getToken } = auth;
-  const { status } = useClerkPageState(auth);
+  const { status } = useClerkPageState(auth, orgSlug);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
 
-  async function loadProjects() {
+  const loadProjects = useCallback(async () => {
     setLoading(true); setError('');
     try { const token = await getToken(); const result = await saasApi.listProjects(token); setProjects(result.projects || []); }
     catch (err) { setError(err instanceof ApiError ? err.message : 'Projects are unavailable.'); }
     finally { setLoading(false); }
-  }
-  useEffect(() => { if (!status) loadProjects(); }, [getToken, status]);
+  }, [getToken]);
+  useEffect(() => { if (!status) loadProjects(); }, [loadProjects, status]);
   const filtered = projects.filter((project) => !query.trim() || `${project.name} ${project.description || ''}`.toLowerCase().includes(query.trim().toLowerCase()));
 
   return <WorkspaceFrame orgSlug={orgSlug} active="Projects"><div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between"><div><p className="eyebrow">WORKSPACE</p><h2 className="text-2xl font-semibold">Projects</h2><p className="muted mt-1">Keep outcomes, owners, and the work behind them together.</p></div>{!status && <CreateProjectDialog onCreated={(project) => setProjects((current) => [project, ...current])} />}</div>{status && <p className="muted" role="status">{status}</p>}{!status && loading && <div className="grid gap-3" aria-busy="true"><div className="h-24 animate-pulse rounded-lg bg-muted" /><div className="h-24 animate-pulse rounded-lg bg-muted" /></div>}{!status && !loading && error && <Card role="alert"><CardHeader><CardTitle>Projects could not load</CardTitle><CardDescription>{error}</CardDescription></CardHeader><CardContent><Button variant="outline" onClick={loadProjects}>Retry</Button></CardContent></Card>}{!status && !loading && !error && <><div className="mb-4 max-w-sm"><Label htmlFor="project-search" className="sr-only">Search projects</Label><Input id="project-search" type="search" placeholder="Search projects…" value={query} onChange={(event) => setQuery(event.target.value)} /></div>{filtered.length ? <section aria-label="Projects" className="grid gap-3">{filtered.map((project) => <ProjectRow key={project.id} project={{ ...project, organizationSlug: orgSlug }} />)}</section> : <Card><CardHeader><CardTitle>{query ? 'No projects match' : 'Start your first project'}</CardTitle><CardDescription>{query ? 'Try a different search or clear the filter.' : 'Define a shared outcome before adding tasks.'}</CardDescription></CardHeader><CardContent>{query ? <Button variant="outline" onClick={() => setQuery('')}>Clear search</Button> : <CreateProjectDialog onCreated={(project) => setProjects((current) => [project, ...current])} />}</CardContent></Card>}</>}</WorkspaceFrame>;
