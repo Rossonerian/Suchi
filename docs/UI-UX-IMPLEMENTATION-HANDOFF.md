@@ -141,6 +141,24 @@ but no mobile app can authenticate without the Clerk mobile key.
   `orgSlug`, and `WorkspaceGate` prevents tenant data consumers from mounting
   before the route organization is active.
 
+## Clerk authentication gate attempt
+
+- `frontend/.env.local` has no `NEXT_PUBLIC_AUTH_PROVIDER` or
+  `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`.
+- `backend/.env` has no `AUTH_PROVIDER` or `CLERK_SECRET_KEY`.
+- `apps/mobile/.env` is absent, so `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` and
+  `EXPO_PUBLIC_API_URL` are not configured.
+- The SaaS backend started against the disposable PostgreSQL database: health
+  returned `200`, while protected SaaS requests correctly returned
+  `503 AUTH_PROVIDER_UNAVAILABLE` rather than accepting an unauthenticated
+  request.
+- The frontend production server rendered the sign-in and workspace-access
+  routes successfully, but Clerk was disabled by the existing feature gate.
+- The API 35 `NIDAR_Runtime_API35` emulator was re-booted successfully, but no
+  mobile app session or authenticated organization data could be exercised.
+- No Clerk users, organizations, or seeded fixture rows were created because
+  real development IDs were not available.
+
 ## Smallest external setup required to unblock the release gate
 
 1. Create or select a **Clerk development** instance with Organizations
