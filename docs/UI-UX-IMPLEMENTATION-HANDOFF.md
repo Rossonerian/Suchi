@@ -38,6 +38,7 @@ This handoff records the implementation slices completed from the Astra UI/UX Pr
 - `15fd910` — active-workspace gating, workspace-context tests, and URL-backed SaaS task filters.
 - `47a4135` — close verification blockers: route-aware workspace switching, notification failures, table semantics, mobile My Work scope, push activation race, and DST fold-preserving edits.
 - `b58b6e6` — clear shell search/notification state across workspace route changes and gate all SaaS data pages on the canonical workspace.
+- `140d3f4` — cancel stale workspace search requests when the route workspace changes.
 
 ## Files and components changed
 
