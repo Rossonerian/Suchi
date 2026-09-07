@@ -12,7 +12,7 @@ const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolea
 
 function notificationHref(orgSlug, item) {
   if (!item.resourceId) return null;
-  if (item.resourceType === 'task') return `/app/${orgSlug}/tasks?task=${encodeURIComponent(item.resourceId)}`;
+  if (item.resourceType === 'task') return `/app/${orgSlug}/tasks/${encodeURIComponent(item.resourceId)}`;
   if (item.resourceType === 'project') return `/app/${orgSlug}/projects/${encodeURIComponent(item.resourceId)}`;
   if (item.resourceType === 'meeting') return `/app/${orgSlug}/meetings?meeting=${encodeURIComponent(item.resourceId)}`;
   return null;

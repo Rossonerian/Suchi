@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
+import { WorkspaceFrame } from '../../../components/saas/WorkspaceFrame';
 
 const labels = {
   'my-work': 'My Work',
@@ -20,5 +21,10 @@ export default function WorkspaceSection() {
   const { orgSlug, section } = router.query;
   const sectionKey = Array.isArray(section) ? section[0] : section;
   const label = labels[sectionKey] || 'Workspace';
-  return <main className="min-h-screen bg-background p-4 text-foreground md:p-8"><div className="mx-auto max-w-3xl"><Link className="text-sm text-primary underline-offset-4 hover:underline" href={`/app/${orgSlug}`}>← Back to {orgSlug}</Link><Card className="mt-6"><CardHeader><CardTitle>{label}</CardTitle><CardDescription>This organization-aware surface is reserved for the next migration slice.</CardDescription></CardHeader><CardContent><p className="muted">The legacy board remains available while this workflow is moved behind the shared API.</p><Button asChild className="mt-4"><Link href="/dashboard">Open legacy board</Link></Button></CardContent></Card></div></main>;
+  return <WorkspaceFrame orgSlug={orgSlug} active={label}>
+    <Card className="max-w-3xl">
+      <CardHeader><CardTitle>{label}</CardTitle><CardDescription>This workspace view is not available in the current environment.</CardDescription></CardHeader>
+      <CardContent className="flex flex-wrap gap-2"><Button asChild><Link href={`/app/${orgSlug}`}>Back to Home</Link></Button><Button asChild variant="outline"><Link href={`/app/${orgSlug}/tasks`}>Open Tasks</Link></Button></CardContent>
+    </Card>
+  </WorkspaceFrame>;
 }

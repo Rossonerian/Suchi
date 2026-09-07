@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { OrganizationSwitcher } from '@clerk/nextjs';
+import { OrganizationSwitcher, useOrganization, useOrganizationList } from '@clerk/nextjs';
 import { useAuth } from '@clerk/nextjs';
 import { Bell, Menu, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -56,7 +56,7 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
           <Button id="workspace-navigation-trigger" type="button" className="workspace-mobile-trigger" variant="outline" size="icon" aria-label="Open workspace navigation" onClick={() => setMobileOpen(true)}><Menu aria-hidden="true" /></Button>
           <div><p className="eyebrow">WORKSPACE</p><h1>{orgSlug || 'Workspace'}</h1></div>
         </div>
-        {clerkEnabled && <div className="workspace-topbar-actions"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter /><OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/onboarding" /></div>}
+        {clerkEnabled && <div className="workspace-topbar-actions"><WorkspaceContext orgSlug={orgSlug} /><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter /><OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/onboarding" /></div>}
       </header>
       <main className="workspace-content">{children}</main>
     </div>
@@ -72,6 +72,18 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
 
 function WorkspaceBrand({ orgSlug }) {
   return <div className="workspace-brand"><span className="workspace-brand-mark" aria-hidden="true">A</span><div><p className="eyebrow">ASTRA WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div></div>;
+}
+
+function WorkspaceContext({ orgSlug }) {
+  const { organization } = useOrganization();
+  const { isLoaded, userMemberships, setActive } = useOrganizationList({ userMemberships: { pageSize: 50 } });
+  const membership = userMemberships?.data?.find((item) => item.organization.slug === orgSlug || item.organization.id === orgSlug);
+  useEffect(() => {
+    if (!isLoaded || !membership || organization?.id === membership.organization.id) return;
+    setActive?.({ organization: membership.organization.id });
+  }, [isLoaded, membership, organization?.id, setActive]);
+  if (!isLoaded || !membership || !organization || organization.id === membership.organization.id) return null;
+  return <p className="text-xs text-muted-foreground" role="status">Switching to {membership.organization.name}…</p>;
 }
 
 function WorkspaceNavigation({ orgSlug, active, onNavigate }) {
@@ -117,15 +129,15 @@ function WorkspaceSearch({ orgSlug }) {
     return () => { active = false; clearTimeout(timer); };
   }, [getToken, query]);
   const all = results ? [...(results.projects || []).map((item) => ({ ...item, type: 'Project' })), ...(results.tasks || []).map((item) => ({ ...item, type: 'Task' })), ...(results.meetings || []).map((item) => ({ ...item, type: 'Meeting' }))].slice(0, 8) : [];
-  return <div className="workspace-search relative hidden w-52 lg:block"><label htmlFor="workspace-search" className="sr-only">Search workspace</label><div className="flex items-center gap-2 rounded-md border border-input bg-background px-2"><Search aria-hidden="true" className="h-4 w-4 text-muted-foreground" /><input id="workspace-search" className="h-8 min-h-0 border-0 bg-transparent px-0 text-sm outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search…" /></div>{results && <div className="absolute right-0 top-10 z-20 w-72 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg">{all.length ? all.map((item) => <Link key={`${item.type}-${item.id}`} href={`/app/${orgSlug}/${item.type === 'Project' ? `projects/${item.id}` : item.type === 'Task' ? `tasks?task=${item.id}` : `meetings?meeting=${item.id}`}`} className="block rounded px-2 py-1.5 text-sm hover:bg-muted"><span className="mr-2 text-xs text-muted-foreground">{item.type}</span>{item.name || item.title}</Link>) : <p className="p-2 text-sm text-muted-foreground">No matches.</p>}</div>}</div>;
+  return <div className="workspace-search relative hidden w-52 lg:block"><label htmlFor="workspace-search" className="sr-only">Search workspace</label><div className="flex items-center gap-2 rounded-md border border-input bg-background px-2"><Search aria-hidden="true" className="h-4 w-4 text-muted-foreground" /><input id="workspace-search" className="h-8 min-h-0 border-0 bg-transparent px-0 text-sm outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search…" /></div>{results && <div className="absolute right-0 top-10 z-20 w-72 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg">{all.length ? all.map((item) => <Link key={`${item.type}-${item.id}`} href={`/app/${orgSlug}/${item.type === 'Project' ? `projects/${item.id}` : item.type === 'Task' ? `tasks/${item.id}` : `meetings?meeting=${item.id}`}`} className="block rounded px-2 py-1.5 text-sm hover:bg-muted"><span className="mr-2 text-xs text-muted-foreground">{item.type}</span>{item.name || item.title}</Link>) : <p className="p-2 text-sm text-muted-foreground">No matches.</p>}</div>}</div>;
 }
 
 export function FeatureDisabled({ orgSlug }) {
   return <WorkspaceFrame orgSlug={orgSlug}>
     <div className="rounded-lg border border-border bg-card p-6 text-card-foreground">
-      <h2 className="text-xl font-semibold">Workspace migration is pending</h2>
-      <p className="muted mt-2">Enable Clerk and the SaaS API to use this organization-scoped workflow.</p>
-      <Button asChild className="mt-4"><Link href="/dashboard">Open legacy board</Link></Button>
+      <h2 className="text-xl font-semibold">Workspace access is unavailable</h2>
+      <p className="muted mt-2">This local environment is not connected to the organization service. Sign in with a configured workspace account to continue.</p>
+      <Button asChild className="mt-4"><Link href="/">Return to sign in</Link></Button>
     </div>
   </WorkspaceFrame>;
 }
