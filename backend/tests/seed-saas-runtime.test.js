@@ -6,29 +6,22 @@ import {
   validateRuntimeSeedConfig,
 } from '../scripts/seed-saas-runtime.js';
 
-const ids = {
-  userA: 'user_a_real_clerk_id',
-  userB: 'user_b_real_clerk_id',
-  alpha: 'org_alpha_real_clerk_id',
-  beta: 'org_beta_real_clerk_id',
-};
-
 function validEnv(overrides = {}) {
   return {
     SAAS_RUNTIME_SEED: '1',
     DATABASE_URL: 'postgresql://nidar_dev:password@127.0.0.1:55432/nidar_saas',
-    SAAS_RUNTIME_USER_A_CLERK_ID: ids.userA,
-    SAAS_RUNTIME_USER_B_CLERK_ID: ids.userB,
-    SAAS_RUNTIME_ALPHA_ORG_CLERK_ID: ids.alpha,
-    SAAS_RUNTIME_BETA_ORG_CLERK_ID: ids.beta,
+    NODE_ENV: 'test',
+    AUTH_EMAIL_PASSWORD_ENABLED: '1',
+    SAAS_RUNTIME_PASSWORD: 'test-only-password-for-fixtures',
     ...overrides,
   };
 }
 
-test('runtime seed requires explicit opt-in and all real Clerk identifiers', () => {
+test('runtime seed requires explicit opt-in, non-production, and a supplied fixture password', () => {
   assert.throws(() => validateRuntimeSeedConfig({}), /SAAS_RUNTIME_SEED=1/);
-  assert.throws(() => validateRuntimeSeedConfig(validEnv({ SAAS_RUNTIME_USER_A_CLERK_ID: '' })), /SAAS_RUNTIME_USER_A_CLERK_ID/);
-  assert.deepEqual(validateRuntimeSeedConfig(validEnv()).clerk, ids);
+  assert.throws(() => validateRuntimeSeedConfig(validEnv({ SAAS_RUNTIME_PASSWORD: '' })), /SAAS_RUNTIME_PASSWORD/);
+  assert.throws(() => validateRuntimeSeedConfig(validEnv({ NODE_ENV: 'production' })), /production/);
+  assert.equal(validateRuntimeSeedConfig(validEnv()).password, 'test-only-password-for-fixtures');
 });
 
 test('runtime seed accepts loopback database URLs only', () => {
@@ -48,7 +41,7 @@ test('runtime seed plan is tenant-separated, representative, and deterministic',
   assert.equal(plan.projects.filter((item) => item.organizationKey === 'alpha').length, 2);
   assert.equal(plan.projects.filter((item) => item.organizationKey === 'beta').length, 1);
   assert.equal(plan.tasks.filter((item) => item.organizationKey === 'alpha').length, 6);
-  assert.equal(plan.tasks.filter((item) => item.organizationKey === 'beta').length, 1);
+  assert.equal(plan.tasks.filter((item) => item.organizationKey === 'beta').length, 2);
   assert.equal(plan.tasks.find((item) => item.key === 'alpha-overdue').status, 'todo');
   assert.equal(plan.tasks.find((item) => item.key === 'alpha-blocked').status, 'blocked');
   assert.equal(plan.tasks.find((item) => item.key === 'alpha-completed').status, 'done');

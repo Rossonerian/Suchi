@@ -1,22 +1,16 @@
 /*
  * Seed a small, deterministic SaaS dataset for authenticated local/runtime
  * verification. This command is intentionally opt-in and refuses every
- * non-loopback database URL. It never creates Clerk users or organizations;
- * all identifiers must be supplied from an already-configured Clerk
- * development instance.
+ * non-loopback database URL. Users and organizations are created through
+ * Better Auth's supported server APIs; passwords and sessions are never fabricated.
  */
 import 'dotenv/config';
 
 import net from 'node:net';
 import { getSaasDatabase } from '../saas/database.js';
+import { createAuth } from '../saas/auth.js';
 
 const RUNTIME_PROVIDER = 'nidar-runtime';
-const REQUIRED_IDS = [
-  ['SAAS_RUNTIME_USER_A_CLERK_ID', 'userA'],
-  ['SAAS_RUNTIME_USER_B_CLERK_ID', 'userB'],
-  ['SAAS_RUNTIME_ALPHA_ORG_CLERK_ID', 'alpha'],
-  ['SAAS_RUNTIME_BETA_ORG_CLERK_ID', 'beta'],
-];
 
 function isLoopbackDatabaseUrl(value) {
   try {
@@ -40,15 +34,10 @@ function validateRuntimeSeedConfig(env = process.env) {
     throw new Error('Refusing runtime seed: DATABASE_URL must point to a loopback PostgreSQL instance.');
   }
 
-  const clerk = {};
-  for (const [variable, key] of REQUIRED_IDS) {
-    if (!String(env[variable] || '').trim()) throw new Error(`${variable} is required and must be a real Clerk identifier.`);
-    clerk[key] = String(env[variable]).trim();
-  }
-  if (new Set(Object.values(clerk)).size !== Object.values(clerk).length) {
-    throw new Error('Runtime seed Clerk identifiers must be distinct.');
-  }
-  return { databaseUrl: env.DATABASE_URL, clerk };
+  if (!['development', 'test'].includes(env.NODE_ENV)) throw new Error('Refusing runtime seed outside development/test (including production).');
+  if (env.AUTH_EMAIL_PASSWORD_ENABLED !== '1') throw new Error('AUTH_EMAIL_PASSWORD_ENABLED=1 is required for runtime authentication.');
+  if (String(env.SAAS_RUNTIME_PASSWORD || '').length < 12) throw new Error('SAAS_RUNTIME_PASSWORD must contain at least 12 characters.');
+  return { databaseUrl: env.DATABASE_URL, password: env.SAAS_RUNTIME_PASSWORD };
 }
 
 function addDays(date, days, hour = 17) {
@@ -57,15 +46,14 @@ function addDays(date, days, hour = 17) {
 }
 
 function buildRuntimeSeedPlan(config, now = new Date()) {
-  const { clerk } = config;
   const today = addDays(now, 0);
   const users = [
-    { key: 'userA', clerkUserId: clerk.userA, displayName: 'Runtime User A', email: 'runtime-user-a@example.invalid' },
-    { key: 'userB', clerkUserId: clerk.userB, displayName: 'Runtime User B', email: 'runtime-user-b@example.invalid' },
+    { key: 'userA', displayName: 'Runtime User A', email: 'runtime-user-a@example.invalid' },
+    { key: 'userB', displayName: 'Runtime User B', email: 'runtime-user-b@example.invalid' },
   ];
   const organizations = [
-    { key: 'alpha', clerkOrgId: clerk.alpha, name: 'Alpha Runtime', slug: 'alpha-runtime', timezone: 'Asia/Kolkata' },
-    { key: 'beta', clerkOrgId: clerk.beta, name: 'Beta Runtime', slug: 'beta-runtime', timezone: 'America/New_York' },
+    { key: 'alpha', name: 'Workspace Alpha', slug: 'alpha-runtime', timezone: 'Asia/Kolkata' },
+    { key: 'beta', name: 'Workspace Beta', slug: 'beta-runtime', timezone: 'America/New_York' },
   ];
   const memberships = [
     { key: 'alpha-userA', organizationKey: 'alpha', userKey: 'userA', role: 'owner' },
@@ -75,9 +63,9 @@ function buildRuntimeSeedPlan(config, now = new Date()) {
     { key: 'beta-userB', organizationKey: 'beta', userKey: 'userB', role: 'member' },
   ];
   const projects = [
-    { key: 'alpha-operations', organizationKey: 'alpha', slug: 'alpha-operations', name: 'Alpha Operations', description: 'Synthetic project for populated workspace verification.', ownerKey: 'userA', targetDate: addDays(now, 21) },
+    { key: 'alpha-operations', organizationKey: 'alpha', slug: 'alpha-operations', name: 'Alpha Launch', description: 'Synthetic project for populated workspace verification.', ownerKey: 'userA', targetDate: addDays(now, 21) },
     { key: 'alpha-empty', organizationKey: 'alpha', slug: 'alpha-empty', name: 'Alpha Empty Project', description: 'Synthetic project with no tasks for empty-state verification.', ownerKey: 'userA', targetDate: null },
-    { key: 'beta-operations', organizationKey: 'beta', slug: 'beta-operations', name: 'Beta Operations', description: 'Synthetic project for tenant isolation verification.', ownerKey: 'userA', targetDate: addDays(now, 28) },
+    { key: 'beta-operations', organizationKey: 'beta', slug: 'beta-operations', name: 'Beta Migration', description: 'Synthetic project for tenant isolation verification.', ownerKey: 'userA', targetDate: addDays(now, 28) },
   ];
   const tasks = [
     { key: 'alpha-overdue', organizationKey: 'alpha', projectKey: 'alpha-operations', title: 'Alpha overdue task', description: 'Synthetic overdue work.', status: 'todo', priority: 'high', dueAt: addDays(now, -1), assigneeKey: 'alpha-userA' },
@@ -86,10 +74,11 @@ function buildRuntimeSeedPlan(config, now = new Date()) {
     { key: 'alpha-blocked', organizationKey: 'alpha', projectKey: 'alpha-operations', title: 'Alpha blocked task', description: 'Synthetic blocked work.', status: 'blocked', priority: 'high', dueAt: addDays(now, 2), assigneeKey: 'alpha-userA' },
     { key: 'alpha-completed', organizationKey: 'alpha', projectKey: 'alpha-operations', title: 'Alpha completed task', description: 'Synthetic completed work.', status: 'done', priority: 'low', dueAt: addDays(now, -2), completedAt: addDays(now, -2), assigneeKey: 'alpha-userA' },
     { key: 'alpha-long-title', organizationKey: 'alpha', projectKey: 'alpha-operations', title: 'Alpha task with a deliberately long title for responsive and keyboard verification', description: 'Synthetic long-content work.', status: 'todo', priority: 'none', dueAt: null, assigneeKey: 'alpha-userA' },
-    { key: 'beta-isolated', organizationKey: 'beta', projectKey: 'beta-operations', title: 'Beta isolated task', description: 'Synthetic task that must never appear in Alpha.', status: 'todo', priority: 'urgent', dueAt: addDays(now, 4), assigneeKey: 'beta-userB' },
+    { key: 'beta-isolated', organizationKey: 'beta', projectKey: 'beta-operations', title: 'Beta task X', description: 'Synthetic task that must never appear in Alpha.', status: 'todo', priority: 'urgent', dueAt: addDays(now, 4), assigneeKey: 'beta-userB' },
+    { key: 'beta-upcoming', organizationKey: 'beta', projectKey: 'beta-operations', title: 'Beta task Y', description: 'Synthetic Beta follow-up.', status: 'todo', priority: 'medium', dueAt: addDays(now, 6), assigneeKey: 'beta-userA' },
   ];
   const meetings = [
-    { key: 'alpha-planning', organizationKey: 'alpha', projectKey: 'alpha-operations', externalEventId: 'runtime-alpha-planning', title: 'Alpha planning meeting', description: 'Synthetic meeting with internal and external attendees.', startAt: addDays(now, 7, 15), endAt: addDays(now, 7, 16), timezone: 'Asia/Kolkata', creatorKey: 'userA', attendees: [{ membershipKey: 'alpha-userA', email: users[0].email }, { membershipKey: null, email: 'external-alpha@example.invalid' }] },
+    { key: 'alpha-planning', organizationKey: 'alpha', projectKey: 'alpha-operations', externalEventId: 'runtime-alpha-planning', title: 'Alpha Weekly Planning', description: 'Synthetic meeting with internal and external attendees.', startAt: addDays(now, 7, 15), endAt: addDays(now, 7, 16), timezone: 'Asia/Kolkata', creatorKey: 'userA', attendees: [{ membershipKey: 'alpha-userA', email: users[0].email }, { membershipKey: null, email: 'external-alpha@example.invalid' }] },
     { key: 'beta-planning', organizationKey: 'beta', projectKey: 'beta-operations', externalEventId: 'runtime-beta-planning', title: 'Beta planning meeting', description: 'Synthetic Beta meeting.', startAt: addDays(now, 8, 14), endAt: addDays(now, 8, 15), timezone: 'America/New_York', creatorKey: 'userA', attendees: [{ membershipKey: 'beta-userA', email: users[0].email }, { membershipKey: 'beta-userB', email: users[1].email }] },
   ];
   const notifications = [
@@ -123,18 +112,18 @@ async function seedRuntimeData(db, config, now = new Date()) {
   const counts = await db.$transaction(async (tx) => {
     const userIds = new Map();
     for (const user of plan.users) {
-      const saved = await tx.userProfile.upsert({ where: { clerkUserId: user.clerkUserId }, create: { clerkUserId: user.clerkUserId, displayName: user.displayName, email: user.email }, update: { displayName: user.displayName, email: user.email } });
+      const saved = await tx.userProfile.findUniqueOrThrow({ where: { email: user.email } });
       userIds.set(user.key, saved.id);
     }
     const organizationIds = new Map();
     for (const organization of plan.organizations) {
-      const saved = await tx.organization.upsert({ where: { clerkOrgId: organization.clerkOrgId }, create: { clerkOrgId: organization.clerkOrgId, name: organization.name, slug: organization.slug }, update: { name: organization.name, slug: organization.slug } });
+      const saved = await tx.organization.findUniqueOrThrow({ where: { slug: organization.slug } });
       organizationIds.set(organization.key, saved.id);
       await tx.organizationSettings.upsert({ where: { organizationId: saved.id }, create: { organizationId: saved.id, timezone: organization.timezone }, update: { timezone: organization.timezone } });
     }
     const membershipIds = new Map();
     for (const membership of plan.memberships) {
-      const saved = await tx.organizationMembership.upsert({ where: { organizationId_userId: { organizationId: organizationIds.get(membership.organizationKey), userId: userIds.get(membership.userKey) } }, create: { organizationId: organizationIds.get(membership.organizationKey), userId: userIds.get(membership.userKey), role: membership.role }, update: { role: membership.role } });
+      const saved = await tx.organizationMembership.findUniqueOrThrow({ where: { organizationId_userId: { organizationId: organizationIds.get(membership.organizationKey), userId: userIds.get(membership.userKey) } } });
       membershipIds.set(membership.key, saved.id);
     }
     const projectIds = new Map();
@@ -163,10 +152,33 @@ async function seedRuntimeData(db, config, now = new Date()) {
   return { counts, idempotent: true };
 }
 
+async function ensureRuntimeIdentities(db, auth, config) {
+  const plan = buildRuntimeSeedPlan(config);
+  const users = new Map();
+  for (const fixture of plan.users) {
+    let user = await db.userProfile.findUnique({ where: { email: fixture.email } });
+    if (!user) user = (await auth.api.signUpEmail({ body: { name: fixture.displayName, email: fixture.email, password: config.password } })).user;
+    // A rerun must verify existing fixture credentials, not overwrite accounts.
+    await auth.api.signInEmail({ body: { email: fixture.email, password: config.password } });
+    users.set(fixture.key, user.id);
+  }
+  for (const fixture of plan.organizations) {
+    let org = await db.organization.findUnique({ where: { slug: fixture.slug } });
+    if (!org) org = await auth.api.createOrganization({ body: { userId: users.get('userA'), name: fixture.name, slug: fixture.slug } });
+    for (const member of plan.memberships.filter(item => item.organizationKey === fixture.key)) {
+      const userId = users.get(member.userKey);
+      const existing = await db.organizationMembership.findUnique({ where: { organizationId_userId: { organizationId: org.id, userId } } });
+      if (!existing) await auth.api.addMember({ body: { userId, organizationId: org.id, role: member.role } });
+      else if (existing.role !== member.role) throw new Error('Existing runtime membership role differs; refusing to overwrite it.');
+    }
+  }
+}
+
 async function run({ env = process.env, databaseFactory = getSaasDatabase } = {}) {
   const config = validateRuntimeSeedConfig(env);
   const db = databaseFactory(config.databaseUrl);
   try {
+    await ensureRuntimeIdentities(db, createAuth(db, env), config);
     return { mode: 'runtime-seed', ...(await seedRuntimeData(db, config)) };
   } finally {
     await db.$disconnect?.();
@@ -180,4 +192,4 @@ if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').hre
   });
 }
 
-export { buildRuntimeSeedPlan, isLoopbackDatabaseUrl, seedRuntimeData, run, validateRuntimeSeedConfig };
+export { buildRuntimeSeedPlan, isLoopbackDatabaseUrl, seedRuntimeData, ensureRuntimeIdentities, run, validateRuntimeSeedConfig };
