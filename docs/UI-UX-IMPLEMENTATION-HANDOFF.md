@@ -22,6 +22,7 @@ This handoff records the implementation slices completed from the Astra UI/UX Pr
 | Inbox/notification deep links | COMPLETE BUT RUNTIME UNVERIFIED | Loading/error/empty/read states and task/project/meeting links; live notification payloads remain unverified. |
 | AI proposal review safety | COMPLETE BUT RUNTIME UNVERIFIED | All supplied proposal arguments, discard/confirm, side-effect warning, and created-task links; backend/provider execution remains unverified. |
 | Onboarding and workspace choice | COMPLETE BUT RUNTIME UNVERIFIED | Generated editable slug; one membership can route directly, multiple memberships require explicit selection. |
+| Legacy task detail modal accessibility | COMPLETE BUT RUNTIME UNVERIFIED | Replaced the custom overlay with shadcn Dialog semantics, labeled fields, Escape/focus behavior, and delete confirmation. |
 | Settings scope entry point | PARTIAL | Personal/workspace grouping route added; full permissions, integration health, and billing UX remain. |
 | Expo navigation/workspace/task workflows | COMPLETE BUT RUNTIME UNVERIFIED | Persistent nav, explicit workspace selection, projects, task creation/detail/retry, meetings, notifications, and AI review; no physical device/provider verification. |
 
@@ -32,6 +33,7 @@ This handoff records the implementation slices completed from the Astra UI/UX Pr
 - `70a3657` — meetings, assistant, onboarding, and mobile workflows.
 - `e091f00` — task form error association.
 - `65a91d3` — workspace destinations and context alignment.
+- `55c735e` — accessible legacy task detail dialog.
 
 ## Files and components changed
 
@@ -65,7 +67,7 @@ Not verified:
 
 ## Remaining risks and follow-up
 
-P0/P1 follow-up remains for live verification and deeper parity: the legacy custom task modal still needs replacement with the accessible Sheet/Dialog pattern; DataTable sort/selection semantics and mobile populated-table behavior need an authenticated browser pass; task assignee editing needs richer API response/UI support; meeting DST/provider synchronization needs development-service verification; AI edit/partial-success flows need backend contracts; and mobile notification deep links need provider testing.
+P0/P1 follow-up remains for live verification and deeper parity: DataTable sort/selection semantics and mobile populated-table behavior need an authenticated browser pass; task assignee editing needs richer API response/UI support; meeting DST/provider synchronization needs development-service verification; AI edit/partial-success flows need backend contracts; and mobile notification deep links need provider testing.
 
 The current lint warnings are non-blocking but should be cleaned up before release. No backend, production data, external credentials, or deployments were changed.
 
