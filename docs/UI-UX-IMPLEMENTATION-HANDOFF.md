@@ -39,6 +39,9 @@ This handoff records the implementation slices completed from the Astra UI/UX Pr
 - `47a4135` — close verification blockers: route-aware workspace switching, notification failures, table semantics, mobile My Work scope, push activation race, and DST fold-preserving edits.
 - `b58b6e6` — clear shell search/notification state across workspace route changes and gate all SaaS data pages on the canonical workspace.
 - `140d3f4` — cancel stale workspace search requests when the route workspace changes.
+- `bffdbf3` — honor the current mobile project route filter after notification navigation.
+- `ffd1417` — add a regression test for reused mobile Tasks project routes.
+- `cb00954` — record the final real-runtime verification evidence and blockers.
 
 ## Files and components changed
 
