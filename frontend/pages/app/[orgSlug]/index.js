@@ -1,67 +1,28 @@
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useAuth, OrganizationSwitcher } from '@clerk/nextjs';
 import { useRouter } from 'next/router';
+import { useAuth } from '@clerk/nextjs';
+import { useEffect, useMemo, useState } from 'react';
 import { ApiError, saasApi } from '../../../lib/api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
+import { WorkspaceFrame, FeatureDisabled, useClerkPageState } from '../../../components/saas/WorkspaceFrame';
 import { Button } from '../../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
+import { isDueToday, isOverdue } from '../../../lib/saas-task-utils.mjs';
 
-const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk'
-  && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
-function WorkspaceNav({ orgSlug }) {
-  const links = [
-    ['Home', `/app/${orgSlug}`],
-    ['My Work', `/app/${orgSlug}/my-work`],
-    ['Projects', `/app/${orgSlug}/projects`],
-    ['Tasks', `/app/${orgSlug}/tasks`],
-    ['Calendar', `/app/${orgSlug}/calendar`],
-    ['Meetings', `/app/${orgSlug}/meetings`],
-    ['Team', `/app/${orgSlug}/team`],
-    ['AI Assistant', `/app/${orgSlug}/ai`],
-    ['Integrations', `/app/${orgSlug}/integrations`],
-    ['Settings', `/app/${orgSlug}/settings`],
-  ];
-  return <nav aria-label="Workspace navigation" className="flex flex-wrap gap-2">{links.map(([label, href]) => <Button key={href} asChild variant={label === 'Home' ? 'secondary' : 'outline'} size="sm"><Link href={href}>{label}</Link></Button>)}</nav>;
-}
-
-function ClerkWorkspaceHome({ orgSlug }) {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
-  const [projects, setProjects] = useState([]);
-  const [message, setMessage] = useState('Loading workspace…');
-
-  useEffect(() => {
-    let active = true;
-    if (!isLoaded) return undefined;
-    if (!isSignedIn) {
-      setMessage('Sign in to open this workspace.');
-      return undefined;
-    }
-    getToken().then((token) => saasApi.listProjects(token)).then((result) => {
-      if (!active) return;
-      setProjects(result.projects || []);
-      setMessage('');
-    }).catch((error) => {
-      if (!active) return;
-      setMessage(error instanceof ApiError ? error.message : 'Workspace data is unavailable.');
-    });
-    return () => { active = false; };
-  }, [getToken, isLoaded, isSignedIn]);
-
-  return <WorkspaceFrame orgSlug={orgSlug}>
-    {message && <p className="muted" role="status">{message}</p>}
-    {!message && <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{projects.length ? projects.map((project) => <Card key={project.id}><CardHeader><CardTitle>{project.name}</CardTitle><CardDescription>{project.status}</CardDescription></CardHeader><CardContent><p className="muted">{project.description || 'No description yet.'}</p></CardContent></Card>) : <Card><CardHeader><CardTitle>Start your first project</CardTitle><CardDescription>Your workspace is ready for a project brief and task list.</CardDescription></CardHeader><CardContent><Button asChild><Link href={`/app/${orgSlug}/projects`}>Create project</Link></Button></CardContent></Card>}</div>}
-  </WorkspaceFrame>;
-}
-
-function WorkspaceFrame({ orgSlug, children }) {
-  return <main className="min-h-screen bg-background p-4 text-foreground md:p-8"><div className="mx-auto max-w-7xl space-y-6"><header className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-center md:justify-between"><div><p className="eyebrow">WORKSPACE</p><h1 className="text-3xl font-semibold">{orgSlug}</h1></div>{clerkEnabled && <OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/onboarding" />}</header><WorkspaceNav orgSlug={orgSlug} />{children}</div></main>;
+function HomeContent({ orgSlug }) {
+  const auth = useAuth(); const { status } = useClerkPageState(auth);
+  const [projects, setProjects] = useState([]); const [tasks, setTasks] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  async function load() { setLoading(true); setError(''); try { const token = await auth.getToken(); const [projectResult, taskResult] = await Promise.all([saasApi.listProjects(token), saasApi.listTasks({}, token)]); setProjects(projectResult.projects || []); setTasks(taskResult.tasks || []); } catch (err) { setError(err instanceof ApiError ? err.message : 'Workspace data is unavailable.'); } finally { setLoading(false); } }
+  useEffect(() => { if (!status) load(); }, [auth, status]);
+  const projectById = useMemo(() => new Map(projects.map((project) => [project.id, project.name])), [projects]);
+  const overdue = tasks.filter((task) => isOverdue(task)); const dueToday = tasks.filter((task) => isDueToday(task)); const blocked = tasks.filter((task) => task.status === 'blocked'); const next = tasks.filter((task) => !['done', 'cancelled'].includes(task.status)).sort((a, b) => new Date(a.dueAt || '9999-12-31') - new Date(b.dueAt || '9999-12-31')).slice(0, 6);
+  if (status) return <WorkspaceFrame orgSlug={orgSlug} active="Home"><p className="muted" role="status">{status}</p></WorkspaceFrame>;
+  return <WorkspaceFrame orgSlug={orgSlug} active="Home"><header className="flex flex-col gap-2 border-b border-border pb-5"><p className="eyebrow">HOME</p><h1 className="text-2xl font-semibold">What needs your attention?</h1><p className="muted">Keep commitments visible and move the next piece of work forward.</p></header>{loading && <div className="grid gap-3 md:grid-cols-3" aria-busy="true"><div className="h-28 animate-pulse rounded-lg bg-muted" /><div className="h-28 animate-pulse rounded-lg bg-muted" /><div className="h-28 animate-pulse rounded-lg bg-muted" /></div>}{!loading && error && <Card role="alert"><CardHeader><CardTitle>Workspace data could not load</CardTitle><CardDescription>{error}</CardDescription></CardHeader><CardContent><Button variant="outline" onClick={load}>Retry</Button></CardContent></Card>}{!loading && !error && projects.length === 0 && <Card><CardHeader><CardTitle>Set up your first project</CardTitle><CardDescription>A project gives your team a shared outcome for its tasks and deadlines.</CardDescription></CardHeader><CardContent><Button asChild><Link href={`/app/${orgSlug}/projects`}>Create project</Link></Button></CardContent></Card>}{!loading && !error && projects.length > 0 && <><section aria-label="Attention summary" className="grid gap-3 sm:grid-cols-3"><Link href={`/app/${orgSlug}/tasks?status=blocked`} className="rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><p className="text-sm text-muted-foreground">Blocked</p><p className="mt-2 text-2xl font-semibold">{blocked.length}</p><p className="mt-1 text-xs text-muted-foreground">Needs a decision or unblock</p></Link><Link href={`/app/${orgSlug}/tasks?due=today`} className="rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><p className="text-sm text-muted-foreground">Due today</p><p className="mt-2 text-2xl font-semibold">{dueToday.length}</p><p className="mt-1 text-xs text-muted-foreground">Commitments to close</p></Link><Link href={`/app/${orgSlug}/tasks?overdue=true`} className="rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><p className="text-sm text-muted-foreground">Overdue</p><p className="mt-2 text-2xl font-semibold">{overdue.length}</p><p className="mt-1 text-xs text-muted-foreground">Work that needs attention</p></Link></section><div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]"><Card><CardHeader><CardTitle>Next commitments</CardTitle><CardDescription>Open tasks ordered by deadline.</CardDescription></CardHeader><CardContent>{next.length ? <ul className="grid gap-2" aria-label="Next commitments">{next.map((task) => <li key={task.id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3"><div className="min-w-0"><Link href={`/app/${orgSlug}/tasks/${task.id}`} className="truncate font-medium underline-offset-4 hover:underline">{task.title}</Link><p className="truncate text-xs text-muted-foreground">{projectById.get(task.projectId) || 'Project'}</p></div><span className="shrink-0 text-xs text-muted-foreground">{task.dueAt ? new Date(task.dueAt).toLocaleDateString() : 'No date'}</span></li>)}</ul> : <p className="muted">No open tasks yet. Create one to make the next commitment visible.</p>}</CardContent></Card><Card><CardHeader><CardTitle>Projects</CardTitle><CardDescription>Recent project outcomes.</CardDescription></CardHeader><CardContent><ul className="grid gap-3">{projects.slice(0, 5).map((project) => <li key={project.id}><Link href={`/app/${orgSlug}/projects/${project.id}`} className="font-medium underline-offset-4 hover:underline">{project.name}</Link><p className="text-xs capitalize text-muted-foreground">{project.status || 'active'}{project.targetDate ? ` · target ${new Date(project.targetDate).toLocaleDateString()}` : ''}</p></li>)}</ul><Button asChild variant="outline" className="mt-4"><Link href={`/app/${orgSlug}/projects`}>View all projects</Link></Button></CardContent></Card></div></>}</WorkspaceFrame>;
 }
 
 export default function WorkspaceHome() {
-  const router = useRouter();
-  const { orgSlug } = router.query;
+  const { orgSlug } = useRouter().query;
   if (!orgSlug || Array.isArray(orgSlug)) return <main className="loading-page" aria-busy="true"><p>Loading workspace…</p></main>;
-  if (!clerkEnabled) return <WorkspaceFrame orgSlug={orgSlug}><Card><CardHeader><CardTitle>Workspace migration is pending</CardTitle><CardDescription>Enable Clerk to open organization-scoped workspaces.</CardDescription></CardHeader><CardContent><Button asChild><Link href="/">Return to sign in</Link></Button></CardContent></Card></WorkspaceFrame>;
-  return <ClerkWorkspaceHome orgSlug={orgSlug} />;
+  return clerkEnabled ? <HomeContent orgSlug={orgSlug} /> : <FeatureDisabled orgSlug={orgSlug} />;
 }
