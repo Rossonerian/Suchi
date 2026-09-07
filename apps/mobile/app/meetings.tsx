@@ -1,4 +1,4 @@
-import { useAuth, useOrganization } from '@clerk/expo';
+import { useWorkspace } from '../src/workspace';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
@@ -6,9 +6,9 @@ import { mobileApi, Meeting } from '../src/api';
 import { MobileNav } from '../src/MobileNav';
 
 export default function MeetingsScreen() {
-  const { getToken } = useAuth(); const { organization } = useOrganization(); const params = useLocalSearchParams<{ meetingId?: string }>();
+  const { activeWorkspace, getAuthCookie } = useWorkspace(); const params = useLocalSearchParams<{ meetingId?: string }>();
   const meetingId = typeof params.meetingId === 'string' ? params.meetingId : '';
-  const query = useQuery({ queryKey: ['mobile-meetings', organization?.id], enabled: Boolean(organization?.id), queryFn: async () => mobileApi.meetings((await getToken()) || '') });
+  const query = useQuery({ queryKey: ['mobile-meetings', activeWorkspace?.id], enabled: Boolean(activeWorkspace?.id), queryFn: async () => mobileApi.meetings(await getAuthCookie()) });
   if (query.isPending) return <View className="flex-1 items-center justify-center bg-background"><ActivityIndicator /></View>;
   if (query.isError) return <View className="flex-1 items-center justify-center bg-background px-6"><Text className="mb-4 text-center text-red-700">{query.error.message}</Text><Pressable accessibilityRole="button" className="rounded-md border border-border px-4 py-3" onPress={() => query.refetch()}><Text className="text-foreground">Try again</Text></Pressable></View>;
   const selectedMeeting = meetingId ? query.data.meetings.find((item) => item.id === meetingId) : undefined;

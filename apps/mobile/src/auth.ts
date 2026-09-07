@@ -1,6 +1,36 @@
+import { expoClient } from '@better-auth/expo/client';
+import { createAuthClient } from 'better-auth/react';
+import { organizationClient } from 'better-auth/client/plugins';
 import * as SecureStore from 'expo-secure-store';
 
-export const tokenCache = {
-  async getToken(key: string) { return SecureStore.getItemAsync(key); },
-  async saveToken(key: string, token: string) { return SecureStore.setItemAsync(key, token); },
-};
+export const apiBaseUrl = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+
+/**
+ * Better Auth owns the native session cookie. The Expo plugin persists it in
+ * SecureStore and also restores a short-lived session snapshot on startup.
+ * No user, organization, or API bearer identity is kept in app storage.
+ */
+export const authClient = createAuthClient({
+  baseURL: `${apiBaseUrl}/api/auth`,
+  plugins: [
+    expoClient({ scheme: 'nidar', storagePrefix: 'nidar', storage: SecureStore }),
+    organizationClient(),
+  ],
+});
+
+export const useSession = authClient.useSession;
+
+export async function getAuthCookie() {
+  return authClient.getCookie();
+}
+
+export async function signInWithGoogle() {
+  return authClient.signIn.social({
+    provider: 'google',
+    callbackURL: 'nidar://workspace',
+  });
+}
+
+export async function signOut() {
+  return authClient.signOut();
+}

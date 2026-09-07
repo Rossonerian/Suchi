@@ -1,4 +1,4 @@
-import { useAuth, useOrganization, useOrganizationList } from '@clerk/expo';
+import { useWorkspace } from '../src/workspace';
 import { useLocalSearchParams, Link, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
@@ -8,12 +8,11 @@ import { MobileNav } from '../src/MobileNav';
 import { projectIdFromParams } from '../src/task-route.mjs';
 
 export default function TasksScreen() {
-  const { getToken } = useAuth(); const { organization } = useOrganization(); const { userMemberships } = useOrganizationList({ userMemberships: { pageSize: 20 } }); const params = useLocalSearchParams<{ projectId?: string }>(); const router = useRouter(); const queryClient = useQueryClient(); const [title, setTitle] = useState(''); const projectId = projectIdFromParams(params);
-  const membershipId = userMemberships?.data?.find((membership) => membership.organization.id === organization?.id)?.id;
-  const tasks = useQuery({ queryKey: ['mobile-tasks', organization?.id, projectId, membershipId], enabled: Boolean(organization?.id && membershipId), queryFn: async () => mobileApi.tasks((await getToken()) || '', { projectId: projectId || undefined, assigneeMembershipId: membershipId }) });
-  const projects = useQuery({ queryKey: ['mobile-projects', organization?.id], enabled: Boolean(organization?.id), queryFn: async () => mobileApi.projects((await getToken()) || '') });
-  const create = useMutation({ mutationFn: async () => { if (!projectId) throw new Error('Choose a project before adding a task.'); return mobileApi.createTask((await getToken()) || '', { projectId, title: title.trim() }); }, onSuccess: () => { setTitle(''); queryClient.invalidateQueries({ queryKey: ['mobile-tasks', organization?.id] }); } });
-  const update = useMutation({ mutationFn: async ({ task, status }: { task: Task; status: string }) => mobileApi.updateTask((await getToken()) || '', task.id, { status }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mobile-tasks', organization?.id] }) });
+  const { activeWorkspace, activeMembershipId, getAuthCookie } = useWorkspace(); const params = useLocalSearchParams<{ projectId?: string }>(); const router = useRouter(); const queryClient = useQueryClient(); const [title, setTitle] = useState(''); const projectId = projectIdFromParams(params);
+  const tasks = useQuery({ queryKey: ['mobile-tasks', activeWorkspace?.id, projectId, activeMembershipId], enabled: Boolean(activeWorkspace?.id && activeMembershipId), queryFn: async () => mobileApi.tasks(await getAuthCookie(), { projectId: projectId || undefined, assigneeMembershipId: activeMembershipId || undefined }) });
+  const projects = useQuery({ queryKey: ['mobile-projects', activeWorkspace?.id], enabled: Boolean(activeWorkspace?.id), queryFn: async () => mobileApi.projects(await getAuthCookie()) });
+  const create = useMutation({ mutationFn: async () => { if (!projectId) throw new Error('Choose a project before adding a task.'); return mobileApi.createTask(await getAuthCookie(), { projectId, title: title.trim() }); }, onSuccess: () => { setTitle(''); queryClient.invalidateQueries({ queryKey: ['mobile-tasks', activeWorkspace?.id] }); } });
+  const update = useMutation({ mutationFn: async ({ task, status }: { task: Task; status: string }) => mobileApi.updateTask(await getAuthCookie(), task.id, { status }), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mobile-tasks', activeWorkspace?.id] }) });
   if (tasks.isPending || projects.isPending) return <View className="flex-1 items-center justify-center bg-background"><ActivityIndicator /></View>;
   if (tasks.isError || projects.isError) return <View className="flex-1 items-center justify-center bg-background px-6"><Text className="mb-4 text-center text-red-700">{(tasks.error || projects.error)?.message}</Text><Pressable accessibilityRole="button" className="rounded-md border border-border px-4 py-3" onPress={() => { tasks.refetch(); projects.refetch(); }}><Text className="text-foreground">Try again</Text></Pressable></View>;
   const project = projects.data.projects.find((item) => item.id === projectId) as Project | undefined; const visibleTasks = tasks.data.tasks;

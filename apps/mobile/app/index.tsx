@@ -1,21 +1,20 @@
-import { useSSO, useAuth } from '@clerk/expo';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { signInWithGoogle } from '../src/auth';
+import { useWorkspace } from '../src/workspace';
 
 export default function SignInScreen() {
   const router = useRouter();
-  const { isSignedIn } = useAuth();
-  const { startSSOFlow } = useSSO();
+  const { isSignedIn, isLoaded } = useWorkspace();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  useEffect(() => { if (isSignedIn) router.replace('/workspace'); }, [isSignedIn, router]);
-  if (isSignedIn) return null;
+  useEffect(() => { if (isLoaded && isSignedIn) router.replace('/workspace'); }, [isLoaded, isSignedIn, router]);
+  if (!isLoaded || isSignedIn) return null;
   async function signIn() {
     setBusy(true); setError('');
     try {
-      const result = await startSSOFlow({ strategy: 'oauth_google' });
-      if (result.createdSessionId) await result.setActive?.({ session: result.createdSessionId });
+      await signInWithGoogle();
       router.replace('/workspace');
     } catch (err) { setError(err instanceof Error ? err.message : 'Unable to sign in.'); } finally { setBusy(false); }
   }
