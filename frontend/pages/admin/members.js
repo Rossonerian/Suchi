@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, ApiError } from '../../lib/api';
 import { toast } from 'sonner';
-import MissionSidebar, { MobileNavigationButton } from '../../components/MissionSidebar';
-import ThemeToggle from '../../components/ThemeToggle';
+import AdminShell from '../../components/admin/AdminShell';
 
 function teamId(member) {
   return member.team?._id || member.team || '';
@@ -25,7 +24,6 @@ export default function MembersAdmin() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
-  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -108,8 +106,8 @@ export default function MembersAdmin() {
   if (!current || current.role !== 'admin') return <main className="signin-shell"><section className="signin-panel"><p className="eyebrow">ACCESS CONTROL</p><h1>Admin access required</h1><p className="form-hint">Only administrators can manage member access.</p><Link className="button button-secondary" href="/dashboard">Back to dashboard</Link></section></main>;
 
   return (
-    <div className="app-shell"><MissionSidebar isAdmin mobileOpen={mobileNavigationOpen} onMobileOpenChange={setMobileNavigationOpen} /><div className="app-content"><main className="admin-main">
-      <div className="admin-heading"><div className="admin-title"><MobileNavigationButton onClick={() => setMobileNavigationOpen(true)} /><div><p className="eyebrow">ACCESS CONTROL</p><h1>Members</h1><p className="muted">Invite teammates and keep account access current.</p></div></div><div className="admin-heading-actions"><ThemeToggle /><Link className="button button-secondary" href="/dashboard">Back to board</Link></div></div>
+    <AdminShell active="Users" operator={current.name}>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3"><div><p className="eyebrow"><span aria-hidden="true" />ACCESS CONTROL</p><h2 className="text-2xl font-semibold">Users</h2><p className="muted mt-1">Invite teammates and keep account access current.</p></div><Link className="button button-secondary" href="/dashboard">Back to workspace</Link></div>
       {error && <div className="notice notice-error" role="alert">{error}</div>}
       {inviteLink && <section className="surface invite-link-panel" aria-labelledby="invite-link-title"><h2 id="invite-link-title">One-time invitation link</h2><p className="form-hint">Send this link privately. It is shown only now and expires.</p><div className="invite-link-row"><input value={inviteLink} readOnly aria-label="Invitation claim link" onFocus={(event) => event.target.select()} /><button className="button button-secondary" type="button" onClick={copyLink}>Copy link</button></div></section>}
       <section className="surface" aria-labelledby="invite-heading"><h2 id="invite-heading">Invite member</h2><form className="admin-invite-form" onSubmit={createInvite}>
@@ -120,6 +118,6 @@ export default function MembersAdmin() {
         <button className="button button-primary" disabled={busy === 'invite'}>{busy === 'invite' ? 'Creating…' : 'Create invitation'}</button>
       </form></section>
       <section className="surface" aria-labelledby="member-list-heading"><div className="section-heading"><div><h2 id="member-list-heading">Team members</h2><p className="muted">{members.length} account{members.length === 1 ? '' : 's'}</p></div></div><div className="members-table-wrap"><table className="members-table"><caption className="sr-only">NIDAR member accounts</caption><thead><tr><th>Name</th><th>Email</th><th>Team</th><th>Status</th><th>Role</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{members.length === 0 ? <tr><td className="members-empty" colSpan="6"><p>No member accounts are active yet. Create an invitation to bring the first teammate aboard.</p><a className="button button-primary" href="#invite-name">Create invitation</a></td></tr> : members.map((member) => { const id = member._id; const disabled = busy === id; return <tr key={id}><td data-label="Name"><strong>{member.name}</strong></td><td data-label="Email">{member.email}</td><td data-label="Team"><select value={teamId(member)} onChange={(event) => updateMember(id, { team: event.target.value }, `${member.name}'s team was updated.`)} disabled={disabled}>{teams.map((team) => <option key={team._id} value={team._id}>{team.displayName}</option>)}</select></td><td data-label="Status"><select value={member.status || 'active'} onChange={(event) => updateMember(id, { status: event.target.value }, `${member.name}'s status was updated.`)} disabled={disabled}><option value="invited">Invited</option><option value="active">Active</option><option value="disabled">Disabled</option></select></td><td data-label="Role"><select value={member.role || 'member'} onChange={(event) => updateMember(id, { role: event.target.value }, `${member.name}'s role was updated.`)} disabled={disabled}><option value="member">Member</option><option value="admin">Admin</option></select></td><td data-label="Actions"><div className="member-actions"><button className="button button-secondary" type="button" onClick={() => resetAccess(member)} disabled={disabled}>Reset access</button><button className="button button-secondary" type="button" onClick={() => revokeSessions(member)} disabled={disabled}>Revoke sessions</button></div></td></tr>; })}</tbody></table></div></section>
-    </main></div></div>
+    </AdminShell>
   );
 }
