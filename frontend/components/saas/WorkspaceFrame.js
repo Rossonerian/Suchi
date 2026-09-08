@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useOrganization, useOrganizationList } from '@clerk/nextjs';
 import { useAuth } from '@clerk/nextjs';
-import { Bell, Menu, Search } from 'lucide-react';
+import { Bell, CalendarDays, CheckSquare, ChevronDown, Home, Inbox, Menu, PanelsTopLeft, Search, Settings, Sparkles, Users, Video } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -35,6 +35,21 @@ const settingsLinks = [
   ['Settings', 'settings'],
 ];
 
+const navIcons = {
+  Home,
+  'My Work': CheckSquare,
+  Inbox,
+  Projects: PanelsTopLeft,
+  Calendar: CalendarDays,
+  'AI Assistant': Sparkles,
+  Tasks: CheckSquare,
+  Meetings: Video,
+  Team: Users,
+  Integrations: PanelsTopLeft,
+  Billing: PanelsTopLeft,
+  Settings,
+};
+
 export function WorkspaceFrame({ orgSlug, children, active }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const wasOpen = useRef(false);
@@ -54,10 +69,10 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
       <div className="workspace-sidebar-footer"><span className="muted">Team workspace</span></div>
     </aside>
     <div className="workspace-main">
-      <header className="workspace-topbar">
+      <header className="workspace-topbar banani-glass-surface">
         <div className="workspace-topbar-context">
           <Button id="workspace-navigation-trigger" type="button" className="workspace-mobile-trigger" variant="outline" size="icon" aria-label="Open workspace navigation" onClick={() => setMobileOpen(true)}><Menu aria-hidden="true" /></Button>
-          <div><p className="eyebrow">WORKSPACE</p><h1>{orgSlug || 'Workspace'}</h1></div>
+          <div className="workspace-breadcrumb"><p className="eyebrow">WORKSPACE</p><h1>{orgSlug || 'Workspace'}</h1></div>
         </div>
         {clerkEnabled && <div className="workspace-topbar-actions"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter orgSlug={orgSlug} /><WorkspaceSwitcher /></div>}
       </header>
@@ -108,7 +123,7 @@ function WorkspaceGate({ orgSlug, children }) {
 }
 
 function WorkspaceBrand({ orgSlug }) {
-  return <div className="workspace-brand"><span className="workspace-brand-mark" aria-hidden="true">A</span><div><p className="eyebrow">ASTRA WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div></div>;
+  return <div className="workspace-brand"><span className="workspace-brand-mark" aria-hidden="true">N</span><div><p className="eyebrow">NIDAR WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div><span className="workspace-brand-chevron" aria-hidden="true"><ChevronDown /></span></div>;
 }
 
 function WorkspaceSwitcher() {
@@ -149,8 +164,9 @@ function WorkspaceSwitcher() {
 function WorkspaceNavigation({ orgSlug, active, onNavigate }) {
   const renderLinks = (items) => items.map(([label, path]) => {
     const selected = active === label || (label === 'Inbox' && active === 'Notifications');
+    const Icon = navIcons[label] || PanelsTopLeft;
     return <Link key={label} href={`/app/${orgSlug}${path ? `/${path}` : ''}`} className="workspace-nav-link" aria-label={label} aria-current={selected ? 'page' : undefined} onClick={onNavigate}>
-      <span>{label}</span>
+      <Icon aria-hidden="true" className="workspace-nav-icon" /><span>{label}</span>
     </Link>;
   });
 
