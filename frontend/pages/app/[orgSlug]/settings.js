@@ -4,7 +4,7 @@ import { WorkspaceFrame, FeatureDisabled } from '../../../components/saas/Worksp
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 
-const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+const clerkEnabled = true;
 const groups = [
   { title: 'Your preferences', description: 'Personal settings follow you across workspaces.', links: [['Profile', '/profile'], ['Appearance', '/profile#appearance'], ['Notifications', 'notifications']] },
   { title: 'Workspace settings', description: 'Manage access, connections, and workspace policy.', links: [['People and invitations', 'team'], ['Integrations', 'integrations'], ['Billing', 'billing']] },

@@ -1,17 +1,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { api, ApiError } from '../lib/api';
+import { ApiError } from '../lib/api';
+import { signInWithEmail, signInWithGoogle } from '../lib/better-auth-client';
 import { ArrowRight, Eye, EyeOff, LogIn } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { SignInButton } from '@clerk/nextjs';
-
-const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk'
-  && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
-
 export default function SignIn() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -26,8 +22,8 @@ export default function SignIn() {
     setError('');
     setLoading(true);
     try {
-      await api.login(email.trim(), password);
-      await router.push('/dashboard');
+      await signInWithEmail(email.trim(), password);
+      await router.push('/onboarding');
     } catch (err) {
       if (err instanceof ApiError && err.status === 0) {
         setError('The board is unavailable right now. Check your connection and try again.');
@@ -59,13 +55,10 @@ export default function SignIn() {
           <CardDescription className="lede">Continue to your projects, tasks, and team.</CardDescription>
         </CardHeader>
         <CardContent className="px-0 pb-0">
-        {clerkEnabled && <div className="stack-form">
-          <SignInButton mode="modal" forceRedirectUrl="/onboarding">
-            <Button className="min-h-11" size="lg" type="button">Continue with Google <ArrowRight aria-hidden="true" /></Button>
-          </SignInButton>
+        <div className="stack-form">
+          <Button className="min-h-11" size="lg" type="button" onClick={async () => { setError(''); setLoading(true); try { await signInWithGoogle(); } catch (err) { setError(err instanceof ApiError ? err.message : 'Google sign-in is unavailable.'); } finally { setLoading(false); } }} disabled={loading}>Continue with Google <ArrowRight aria-hidden="true" /></Button>
           <p className="form-hint">Use your workspace identity to continue.</p>
-        </div>}
-        {!clerkEnabled && <>
+        </div>
           <form className="stack-form" onSubmit={handleSubmit} noValidate>
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" autoCapitalize="none" autoFocus required />
@@ -78,7 +71,6 @@ export default function SignIn() {
           </form>
           <p className="form-message" role="alert" aria-live="polite">{error}</p>
           <p className="form-hint invite-help">Have an invitation? <Link href="/claim-invite">Claim your invite</Link></p>
-        </>}
         </CardContent>
       </Card>
     </main>

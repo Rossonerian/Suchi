@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from '../../../lib/better-auth-client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiError, saasApi } from '../../../lib/api';
@@ -11,7 +11,7 @@ import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Textarea } from '../../../components/ui/textarea';
 
-const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+const clerkEnabled = true;
 function defaultZone() { return typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' : 'UTC'; }
 function emptyDraft() { return { title: '', description: '', startAt: '', endAt: '', timezone: defaultZone(), projectId: '', location: '', videoUrl: '', attendeeMembershipIds: [], originalStartAt: '', originalEndAt: '', originalTimezone: '' }; }
 

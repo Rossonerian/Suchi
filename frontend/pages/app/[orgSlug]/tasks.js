@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from '../../../lib/better-auth-client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiError, saasApi } from '../../../lib/api';
@@ -13,7 +13,7 @@ import { Label } from '../../../components/ui/label';
 import { Textarea } from '../../../components/ui/textarea';
 import { TASK_PRIORITIES, TASK_STATUSES, dateInputToIso, filterSaasTasks, isDueToday, isOverdue, taskFiltersFromQuery } from '../../../lib/saas-task-utils.mjs';
 
-const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+const clerkEnabled = true;
 const statusLabel = (value) => String(value || 'todo').replaceAll('_', ' ');
 
 function CreateTaskDialog({ projects, onCreated }) {

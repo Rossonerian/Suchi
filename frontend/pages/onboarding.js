@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { useAuth, useOrganizationList } from '@clerk/nextjs';
+import { useAuth, useOrganizationList } from '../lib/better-auth-client';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { saasApi } from '../lib/api';
 import { Button } from '../components/ui/button';
 
-const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+const clerkEnabled = true;
 function slugify(value) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64); }
 
 function ClerkOnboardingForm() {

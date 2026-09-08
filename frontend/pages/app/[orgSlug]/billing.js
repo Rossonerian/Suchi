@@ -1,11 +1,11 @@
 import { useRouter } from 'next/router';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from '../../../lib/better-auth-client';
 import { useEffect, useState } from 'react';
 import { ApiError, saasApi } from '../../../lib/api';
 import { WorkspaceFrame, FeatureDisabled, useClerkPageState } from '../../../components/saas/WorkspaceFrame';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 
-const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk' && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+const clerkEnabled = true;
 
 function BillingContent({ orgSlug }) {
   const auth = useAuth();

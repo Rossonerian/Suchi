@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { useOrganization, useOrganizationList } from '@clerk/nextjs';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useOrganization, useOrganizationList } from '../../lib/better-auth-client';
 import { Bell, CalendarDays, CheckSquare, ChevronDown, Home, Inbox, Menu, PanelsTopLeft, Search, Settings, Sparkles, Users, Video } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
@@ -11,8 +10,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { ApiError, saasApi } from '../../lib/api';
 import { workspaceContextState } from '../../lib/workspace-context.mjs';
 
-const clerkEnabled = process.env.NEXT_PUBLIC_AUTH_PROVIDER === 'clerk'
-  && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+const saasAuthEnabled = true;
 
 const primaryLinks = [
   ['Home', ''],
@@ -74,15 +72,15 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
           <Button id="workspace-navigation-trigger" type="button" className="workspace-mobile-trigger" variant="outline" size="icon" aria-label="Open workspace navigation" onClick={() => setMobileOpen(true)}><Menu aria-hidden="true" /></Button>
           <div className="workspace-breadcrumb"><p className="eyebrow">WORKSPACE</p><h1>{orgSlug || 'Workspace'}</h1></div>
         </div>
-        {clerkEnabled && <div className="workspace-topbar-actions"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter orgSlug={orgSlug} /><WorkspaceSwitcher /></div>}
+        {saasAuthEnabled && <div className="workspace-topbar-actions"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter orgSlug={orgSlug} /><WorkspaceSwitcher /></div>}
       </header>
-      <main className="workspace-content">{clerkEnabled ? <WorkspaceGate orgSlug={orgSlug}>{children}</WorkspaceGate> : children}</main>
+      <main className="workspace-content">{saasAuthEnabled ? <WorkspaceGate orgSlug={orgSlug}>{children}</WorkspaceGate> : children}</main>
     </div>
     <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
       <SheetContent side="left" className="workspace-mobile-sheet">
         <SheetHeader><SheetTitle>{orgSlug || 'Workspace'}</SheetTitle><SheetDescription>Workspace navigation</SheetDescription></SheetHeader>
         <WorkspaceNavigation orgSlug={orgSlug} active={current} onNavigate={closeMobile} />
-        {clerkEnabled && <div className="workspace-mobile-switcher"><WorkspaceSwitcher /></div>}
+        {saasAuthEnabled && <div className="workspace-mobile-switcher"><WorkspaceSwitcher /></div>}
       </SheetContent>
     </Sheet>
   </div>;
@@ -95,6 +93,7 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
  * and briefly render the wrong tenant's data under Beta's heading.
  */
 function WorkspaceGate({ orgSlug, children }) {
+  const auth = useAuth();
   const { organization } = useOrganization();
   const { isLoaded, userMemberships, setActive } = useOrganizationList({ userMemberships: { pageSize: 50 } });
   const state = workspaceContextState({
@@ -117,6 +116,8 @@ function WorkspaceGate({ orgSlug, children }) {
     return () => { active = false; };
   }, [organization, setActive, state.membership]);
 
+  if (!auth.isLoaded) return <p className="muted" role="status" aria-busy="true">Loading your session…</p>;
+  if (!auth.isSignedIn) return <p className="muted" role="alert">Sign in to open this workspace.</p>;
   if (switchError) return <p className="muted" role="alert">{switchError}</p>;
   if (!state.ready) return <p className="muted" role="status" aria-busy="true">{state.status}</p>;
   return children;
