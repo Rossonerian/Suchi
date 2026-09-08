@@ -136,7 +136,7 @@ export async function signInWithEmail(email, password) {
 }
 
 export async function signInWithGoogle() {
-  const result = await authRequest('/sign-in/social', { method: 'POST', body: JSON.stringify({ provider: 'google', callbackURL: '/onboarding' }) });
+  const result = await authRequest('/sign-in/social', { method: 'POST', body: JSON.stringify({ provider: 'google', callbackURL: '/onboarding', disableRedirect: true }) });
   if (typeof window !== 'undefined' && result?.url) window.location.assign(result.url);
   return result;
 }
