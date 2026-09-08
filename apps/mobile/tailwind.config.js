@@ -2,6 +2,24 @@
 module.exports = {
   content: ['./app/**/*.{js,jsx,ts,tsx}', './src/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
-  theme: { extend: { colors: { background: '#f4f7f9', foreground: '#17232d', primary: '#cf5d18', muted: '#526270', border: '#c7d1d9' } } },
+  theme: {
+    extend: {
+      colors: {
+        // Keep NativeWind's semantic class names aligned with the shared Banani
+        // palette used by the native surfaces and the web shell.
+        background: '#0D0E13',
+        foreground: '#F2F3F5',
+        primary: '#6D8AFF',
+        'primary-foreground': '#0D0E13',
+        muted: '#9B9EAA',
+        border: 'rgba(255,255,255,0.09)',
+        surface: '#17181D',
+        raised: '#1B1E27',
+        success: '#42D47C',
+        warning: '#E2B83E',
+        danger: '#FF727A',
+      },
+    },
+  },
   plugins: [],
 };
