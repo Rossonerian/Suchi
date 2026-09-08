@@ -189,3 +189,34 @@ but no mobile app can authenticate without the Clerk mobile key.
    `NIDAR_Runtime_API35` emulator (or attach an iOS/device runtime). Configure a
    development Expo push channel for foreground, background, and cold-start
    verification.
+
+# Banani UI replication pass
+
+Date: 2026-09-09
+
+The approved Banani export is now the visual source for the implemented web and
+native surfaces. The repository remains on the existing Next.js Pages Router and
+Better Auth/Express boundary; this pass intentionally avoided a router or auth
+migration while applying the exported material system to the running clients.
+
+| Area | Status | Evidence |
+|---|---|---|
+| Banani visual specification | COMPLETE + VERIFIED | `docs/BANANI-UI-REPLICATION-SPEC.md`; all nine export dimensions and behaviors recorded. |
+| Web semantic tokens/background/glass | COMPLETE + VERIFIED | `frontend/styles/globals.css`; dark/light semantic tokens, atmospheric canvas, reduced-transparency fallback. |
+| Web shell/sidebar/top bar | COMPLETE + VERIFIED (build) | `frontend/components/saas/WorkspaceFrame.js`; expanded, tablet icon rail, mobile Sheet, labels/current-page semantics. |
+| Sign-in/onboarding composition | COMPLETE + VERIFIED (build) | `frontend/pages/index.js`, `frontend/pages/onboarding.js`; real existing auth handlers retained, no fixture claims rendered. |
+| Workspace Home | COMPLETE + VERIFIED (build) | `frontend/pages/app/[orgSlug]/index.js`; real focus task, Today’s three, agenda, project pulse, truthful loading/error/empty states. |
+| Platform Admin shell/overview/members | COMPLETE + VERIFIED (build) | `frontend/components/admin/AdminShell.js`, `frontend/pages/admin/index.js`, `frontend/pages/admin/members.js`; metrics are limited to actual legacy admin API data. |
+| Native Banani surfaces | COMPLETE + VERIFIED (typecheck/lint) | `apps/mobile/src/banani.tsx`, mobile auth/home/nav, semantic Tailwind palette, rounded work surfaces, safe-area floating nav. |
+| Native nav auto-hide runtime | PARTIAL | `MobileNav` supports controlled hidden/reveal motion; existing feeds do not yet wire scroll-direction state. |
+| Native full route visual parity | PARTIAL | Tasks, projects, meetings, inbox, AI, workspace now use Banani semantic colors/surfaces; native runtime screenshot comparison remains blocked by auth/device setup. |
+| Admin organizations/users inspectors | PARTIAL | Current deployment exposes member admin data only; organization/audit/system-health inspectors were not fabricated without backing APIs. |
+| Reference screenshot comparison | PARTIAL | Source-level/build checks completed; local browser binary was unavailable in this environment, so pixel-diff captures remain outstanding. |
+
+Commits: `5af88bf` (web shell/auth surfaces), `bbcdf8d` (workspace Home/Admin),
+`b2dffb3` (native auth/nav), `a3671ee` (native Banani route surfaces).
+
+The export’s Northloop/Maya/Acme fixture names, annotation banners, and
+unverifiable compliance/uptime claims are intentionally not rendered. NIDAR
+branding and live product data remain authoritative. Browser/device screenshot
+verification is the next evidence gate; no backend/auth contract was changed.
