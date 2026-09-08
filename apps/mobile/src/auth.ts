@@ -31,6 +31,10 @@ export async function signInWithGoogle() {
   });
 }
 
+export async function signInWithEmail(email: string, password: string) {
+  return authClient.signIn.email({ email, password, callbackURL: 'nidar://workspace' });
+}
+
 export async function signOut() {
   return authClient.signOut();
 }

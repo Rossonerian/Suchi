@@ -3,6 +3,7 @@ import { Stack, usePathname, useRouter } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useWorkspace } from '../src/workspace';
 import { notificationDestination } from '../src/notification-links';
 import '../global.css';
@@ -54,7 +55,7 @@ function NotificationResponseHandler() {
 }
 
 export default function RootLayout() {
-  return <QueryClientProvider client={queryClient}><NotificationResponseHandler /><AuthLoadingGate /></QueryClientProvider>;
+  return <SafeAreaProvider><QueryClientProvider client={queryClient}><NotificationResponseHandler /><AuthLoadingGate /></QueryClientProvider></SafeAreaProvider>;
 }
 
 function AuthLoadingGate() {
