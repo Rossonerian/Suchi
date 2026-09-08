@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useAuth, useOrganization, useOrganizationList } from '../../lib/better-auth-client';
-import { Bell, CalendarDays, CheckSquare, ChevronDown, Home, Inbox, Menu, PanelsTopLeft, Search, Settings, Sparkles, Users, Video } from 'lucide-react';
+import { Bell, CalendarDays, CheckSquare, ChevronDown, Home, Inbox, Menu, PanelLeftClose, PanelLeftOpen, PanelsTopLeft, Search, Settings, Sparkles, Users, Video } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -50,6 +50,7 @@ const navIcons = {
 
 export function WorkspaceFrame({ orgSlug, children, active }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const wasOpen = useRef(false);
   const current = active || 'Home';
 
@@ -60,9 +61,9 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
 
   const closeMobile = () => setMobileOpen(false);
 
-  return <div className="workspace-shell">
+  return <div className={`workspace-shell${sidebarCollapsed ? ' is-collapsed' : ''}`}>
     <aside className="workspace-sidebar" aria-label="Workspace navigation">
-      <WorkspaceBrand orgSlug={orgSlug} />
+      <WorkspaceBrand orgSlug={orgSlug} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((value) => !value)} />
       <WorkspaceNavigation orgSlug={orgSlug} active={current} />
       <div className="workspace-sidebar-footer"><span className="muted">Team workspace</span></div>
     </aside>
@@ -123,8 +124,9 @@ function WorkspaceGate({ orgSlug, children }) {
   return children;
 }
 
-function WorkspaceBrand({ orgSlug }) {
-  return <div className="workspace-brand"><span className="workspace-brand-mark" aria-hidden="true">N</span><div><p className="eyebrow">NIDAR WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div><span className="workspace-brand-chevron" aria-hidden="true"><ChevronDown /></span></div>;
+function WorkspaceBrand({ orgSlug, collapsed, onToggle }) {
+  const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
+  return <div className="workspace-brand"><span className="workspace-brand-mark" aria-hidden="true">N</span><div className="workspace-brand-copy"><p className="eyebrow">NIDAR WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div><button type="button" className="workspace-brand-collapse" onClick={onToggle} aria-label={collapsed ? 'Expand workspace navigation' : 'Collapse workspace navigation'} title={collapsed ? 'Expand navigation' : 'Collapse navigation'}><ToggleIcon aria-hidden="true" /></button><span className="workspace-brand-chevron" aria-hidden="true"><ChevronDown /></span></div>;
 }
 
 function WorkspaceSwitcher() {
