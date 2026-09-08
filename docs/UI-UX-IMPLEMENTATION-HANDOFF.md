@@ -220,3 +220,23 @@ The export’s Northloop/Maya/Acme fixture names, annotation banners, and
 unverifiable compliance/uptime claims are intentionally not rendered. NIDAR
 branding and live product data remain authoritative. Browser/device screenshot
 verification is the next evidence gate; no backend/auth contract was changed.
+
+## Follow-up integration corrections
+
+- `1182e46` aligns the Banani web SaaS surfaces with the repository's active
+  Better Auth session/API boundary. The Pages Router no longer mounts Clerk
+  providers or imports Clerk hooks for SaaS routes; cookies are sent to the
+  existing `/api/auth/*` endpoints and organization activation is refreshed
+  before workspace data consumers mount. Legacy mission-board routes remain
+  unchanged.
+- `1eda47d` adds an accessible desktop sidebar collapse control and wires
+  scroll-direction hide/reveal behavior through the native task, project,
+  inbox, calendar, and assistant feeds. The create FAB remains available when
+  the navigation bar is hidden.
+- Frontend lint, focused tests, and the production build pass after the auth
+  boundary correction. Native typecheck/lint pass after the scroll integration.
+- Authenticated runtime and screenshot comparison are still outstanding: the
+  local backend environment does not currently contain the Better Auth
+  PostgreSQL/session variables required to start the SaaS server, and the
+  browser screenshot tool lacks a Chromium executable. These are evidence/setup
+  blockers, not claims of successful provider verification.
