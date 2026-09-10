@@ -34,6 +34,29 @@ export async function authRequest(path, options = {}) {
   return payload;
 }
 
+export async function apiRequest(path, options = {}) {
+  let response;
+  try {
+    response = await fetch(`${API_URL}/api${path}`, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      credentials: 'include',
+    });
+  } catch {
+    throw new BetterAuthError('Service is unavailable.', 0, 'NETWORK_ERROR');
+  }
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = payload.error;
+    throw new BetterAuthError(
+      typeof error === 'string' ? error : error?.message || payload.message || `Request failed (${response.status})`,
+      response.status,
+      payload.code || error?.code,
+    );
+  }
+  return payload;
+}
+
 function normalizeOrganization(value) {
   if (!value || typeof value !== 'object') return null;
   const organization = value.organization || value;
@@ -68,10 +91,14 @@ export function BetterAuthProvider({ children }) {
 
   const refresh = useCallback(async () => {
     try {
-      const [sessionPayload, organizationsPayload] = await Promise.all([
-        authRequest('/get-session'),
-        authRequest('/organization/list').catch((error) => (error.status === 401 ? { organizations: [] } : Promise.reject(error))),
-      ]);
+      const sessionPayload = await authRequest('/get-session');
+      let organizationsPayload = { organizations: [] };
+      if (sessionPayload?.session) {
+        organizationsPayload = await apiRequest('/v1/organizations').catch((error) => {
+          if (error.status === 401) return { organizations: [] };
+          return { organizations: [] };
+        });
+      }
       setState({
         isLoaded: true,
         session: sessionPayload?.session ? { ...sessionPayload, user: sessionUser(sessionPayload.user) } : null,
@@ -92,7 +119,10 @@ export function BetterAuthProvider({ children }) {
 
   const setActive = useCallback(async ({ organization }) => {
     if (!organization) return;
-    await authRequest('/organization/set-active', { method: 'POST', body: JSON.stringify({ organizationId: organization }) });
+    await apiRequest('/v1/organizations/active', {
+      method: 'POST',
+      body: JSON.stringify({ organizationId: organization }),
+    }).catch(() => {});
     await refresh();
   }, [refresh]);
 
@@ -120,7 +150,10 @@ export function useAuth() {
 export function useOrganization() {
   const auth = useAuth();
   const activeId = auth.session?.session?.activeOrganizationId;
-  const organization = auth.organizations.find((item) => item.id === activeId) || null;
+  const organization =
+    (activeId && auth.organizations.find((item) => item.id === activeId || item.slug === activeId)) ||
+    auth.organizations[0] ||
+    null;
   return { isLoaded: auth.isLoaded, organization };
 }
 
@@ -135,6 +168,10 @@ export function useOrganizationList() {
 
 export async function signInWithEmail(email, password) {
   return authRequest('/sign-in/email', { method: 'POST', body: JSON.stringify({ email, password, callbackURL: '/onboarding' }) });
+}
+
+export async function signUpWithEmail(name, email, password) {
+  return authRequest('/sign-up/email', { method: 'POST', body: JSON.stringify({ name, email, password, callbackURL: '/onboarding' }) });
 }
 
 export async function signInWithGoogle() {

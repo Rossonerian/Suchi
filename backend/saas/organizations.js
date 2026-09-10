@@ -18,9 +18,47 @@ async function listOrganizations(db, userContext) {
   })) || [];
 }
 
-async function provisionOrganization(auth, headers, input) {
+async function provisionOrganization(dbOrAuth, userContextOrHeaders, input) {
   const parsed = parseSchema(organizationInput, input, 'Organization input is invalid.');
-  return auth.api.createOrganization({ headers, body: parsed });
+  if (dbOrAuth?.api?.createOrganization) {
+    return dbOrAuth.api.createOrganization({ headers: userContextOrHeaders, body: parsed });
+  }
+  const db = dbOrAuth;
+  const userContext = userContextOrHeaders;
+  if (!userContext?.userId) throw new AppError('Authentication required.', 401, 'UNAUTHENTICATED');
+
+  const existing = await db.organization.findUnique({
+    where: { slug: parsed.slug },
+  });
+  if (existing) {
+    throw new AppError('An organization with this slug already exists.', 409, 'SLUG_CONFLICT');
+  }
+
+  const org = await db.organization.create({
+    data: {
+      name: parsed.name,
+      slug: parsed.slug,
+      settings: {
+        create: {
+          timezone: 'UTC',
+          weekStartsOn: 1,
+        },
+      },
+      memberships: {
+        create: {
+          userId: userContext.userId,
+          role: 'owner',
+        },
+      },
+    },
+  });
+
+  return {
+    id: org.id,
+    name: org.name,
+    slug: org.slug,
+    role: 'owner',
+  };
 }
 
 export { organizationInput, listOrganizations, provisionOrganization };

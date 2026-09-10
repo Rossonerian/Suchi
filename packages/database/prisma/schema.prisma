@@ -38,54 +38,54 @@ enum TaskPriority {
 }
 
 model UserProfile {
-  id              String   @id @default(cuid())
-  legacyExternalId String? @unique
-  displayName     String
-  email           String   @unique
-  emailVerified   Boolean  @default(false)
-  avatarUrl       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  memberships     OrganizationMembership[]
-  ownedProjects   Project[] @relation("ProjectOwner")
-  createdTasks    Task[]   @relation("TaskCreator")
-  comments        Comment[] @relation("CommentAuthor")
-  activityEvents  ActivityEvent[] @relation("ActivityActor")
-  auditLogs       AuditLog[] @relation("AuditActor")
-  sessions        AuthSession[]
-  accounts        AuthAccount[]
-  invitations     OrganizationInvitation[]
-  authTeamMembers TeamMember[]
+  id               String                   @id @default(cuid())
+  legacyExternalId String?                  @unique
+  displayName      String
+  email            String                   @unique
+  emailVerified    Boolean                  @default(false)
+  avatarUrl        String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  memberships      OrganizationMembership[]
+  ownedProjects    Project[]                @relation("ProjectOwner")
+  createdTasks     Task[]                   @relation("TaskCreator")
+  comments         Comment[]                @relation("CommentAuthor")
+  activityEvents   ActivityEvent[]          @relation("ActivityActor")
+  auditLogs        AuditLog[]               @relation("AuditActor")
+  authUserId       String?                  @unique
+  authUser         AuthUser?                @relation(fields: [authUserId], references: [id], onDelete: SetNull)
+  invitations      OrganizationInvitation[]
+  authTeamMembers  TeamMember[]
 }
 
 model Organization {
-  id              String   @id @default(cuid())
-  legacyExternalId String? @unique
-  name            String
-  slug            String   @unique
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  logo            String?
-  metadata        String?
-  invitations     OrganizationInvitation[]
-  settings        OrganizationSettings?
-  memberships     OrganizationMembership[]
-  teams           Team[]
-  projects        Project[]
-  tasks           Task[]
-  labels          Label[]
-  comments        Comment[]
-  attachments     Attachment[]
-  meetings        Meeting[]
-  notifications   Notification[]
-  integrations    IntegrationConnection[]
-  activityEvents  ActivityEvent[]
-  auditLogs       AuditLog[]
-  aiConversations AiConversation[]
-  aiUsageRecords  AiUsageRecord[]
+  id               String                    @id @default(cuid())
+  legacyExternalId String?                   @unique
+  name             String
+  slug             String                    @unique
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  logo             String?
+  metadata         String?
+  invitations      OrganizationInvitation[]
+  settings         OrganizationSettings?
+  memberships      OrganizationMembership[]
+  teams            Team[]
+  projects         Project[]
+  tasks            Task[]
+  labels           Label[]
+  comments         Comment[]
+  attachments      Attachment[]
+  meetings         Meeting[]
+  notifications    Notification[]
+  integrations     IntegrationConnection[]
+  activityEvents   ActivityEvent[]
+  auditLogs        AuditLog[]
+  aiConversations  AiConversation[]
+  aiUsageRecords   AiUsageRecord[]
   externalMappings ExternalResourceMapping[]
-  usageCounters   UsageCounter[]
-  subscription    Subscription?
+  usageCounters    UsageCounter[]
+  subscription     Subscription?
 }
 
 model OrganizationSettings {
@@ -97,16 +97,16 @@ model OrganizationSettings {
 }
 
 model OrganizationMembership {
-  id             String           @id @default(cuid())
-  organizationId String
-  userId         String
-  role           OrganizationRole @default(member)
-  createdAt      DateTime         @default(now())
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user           UserProfile      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  teamMembers    TeamMember[]
-  projectMembers ProjectMember[]
-  assignedTasks  TaskAssignee[]
+  id               String            @id @default(cuid())
+  organizationId   String
+  userId           String
+  role             OrganizationRole  @default(member)
+  createdAt        DateTime          @default(now())
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user             UserProfile       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamMembers      TeamMember[]
+  projectMembers   ProjectMember[]
+  assignedTasks    TaskAssignee[]
   meetingAttendees MeetingAttendee[]
 
   @@unique([organizationId, userId])
@@ -114,14 +114,14 @@ model OrganizationMembership {
 }
 
 model Team {
-  id             String                  @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   name           String
   slug           String?
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
-  memberCount    Int                     @default(0)
-  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  memberCount    Int          @default(0)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   members        TeamMember[]
   projects       Project[]
 
@@ -130,76 +130,93 @@ model Team {
 }
 
 model TeamMember {
-  id           String                 @id @default(cuid())
-  teamId       String
-  membershipId String?
-  userId       String
-  membershipKey String? @unique
-  createdAt    DateTime @default(now())
-  team         Team                  @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  membership   OrganizationMembership? @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-  user         UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String                  @id @default(cuid())
+  teamId        String
+  membershipId  String?
+  userId        String
+  membershipKey String?                 @unique
+  createdAt     DateTime                @default(now())
+  team          Team                    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  membership    OrganizationMembership? @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  user          UserProfile             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, membershipId])
   @@unique([teamId, userId])
 }
 
+model AuthUser {
+  id            String        @id
+  name          String
+  email         String        @unique
+  emailVerified Boolean       @default(false)
+  image         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  sessions      AuthSession[]
+  accounts      AuthAccount[]
+  userProfile   UserProfile?
+}
+
 model AuthSession {
-  id String @id
-  expiresAt DateTime
-  token String @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String?
-  userAgent String?
-  userId String
+  id                   String   @id
+  expiresAt            DateTime
+  token                String   @unique
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
   activeOrganizationId String?
-  activeTeamId String?
-  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeTeamId         String?
+  user                 AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }
 
 model AuthAccount {
-  id String @id
-  accountId String
-  providerId String
-  userId String
-  accessToken String?
-  refreshToken String?
-  idToken String?
-  accessTokenExpiresAt DateTime?
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
-  scope String?
-  password String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  AuthUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([providerId, accountId])
   @@index([userId])
 }
 
 model AuthVerification {
-  id String @id
+  id         String   @id
   identifier String
-  value String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   @@index([identifier])
 }
 
 model OrganizationInvitation {
-  id String @id
+  id             String       @id
   organizationId String
-  email String
-  role String?
-  teamId String?
-  status String @default("pending")
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  inviterId String
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  inviter UserProfile @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  teamId         String?
+  status         String       @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  inviterId      String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter        UserProfile  @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
   @@index([organizationId])
   @@index([email])
 }
@@ -243,45 +260,45 @@ model ProjectMember {
 }
 
 model Milestone {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   projectId   String
   name        String
-  description String   @default("")
+  description String    @default("")
   targetDate  DateTime?
   completedAt DateTime?
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks       Task[]
 
   @@index([projectId, targetDate])
 }
 
 model Task {
-  id            String         @id @default(cuid())
+  id             String           @id @default(cuid())
   organizationId String
-  projectId     String
-  milestoneId   String?
-  creatorId     String
-  title         String
-  description   String         @default("")
-  status        TaskStatus     @default(todo)
-  priority      TaskPriority   @default(none)
-  startAt       DateTime?
-  dueAt         DateTime?
-  completedAt   DateTime?
-  recurringRule String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  milestone     Milestone?     @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
-  creator       UserProfile    @relation("TaskCreator", fields: [creatorId], references: [id])
-  assignees     TaskAssignee[]
-  dependencies  TaskDependency[] @relation("TaskDependencies")
-  dependents    TaskDependency[] @relation("TaskDependents")
-  subtasks      Subtask[]
-  labels        TaskLabel[]
-  comments      Comment[]
-  attachments   Attachment[]
+  projectId      String
+  milestoneId    String?
+  creatorId      String
+  title          String
+  description    String           @default("")
+  status         TaskStatus       @default(todo)
+  priority       TaskPriority     @default(none)
+  startAt        DateTime?
+  dueAt          DateTime?
+  completedAt    DateTime?
+  recurringRule  String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone      Milestone?       @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  creator        UserProfile      @relation("TaskCreator", fields: [creatorId], references: [id])
+  assignees      TaskAssignee[]
+  dependencies   TaskDependency[] @relation("TaskDependencies")
+  dependents     TaskDependency[] @relation("TaskDependents")
+  subtasks       Subtask[]
+  labels         TaskLabel[]
+  comments       Comment[]
+  attachments    Attachment[]
 
   @@index([organizationId, status, dueAt])
   @@index([organizationId, projectId])
@@ -300,21 +317,21 @@ model TaskAssignee {
 }
 
 model TaskDependency {
-  id            String @id @default(cuid())
-  taskId        String
-  dependencyId  String
-  task          Task   @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
-  dependency    Task   @relation("TaskDependents", fields: [dependencyId], references: [id], onDelete: Cascade)
+  id           String @id @default(cuid())
+  taskId       String
+  dependencyId String
+  task         Task   @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
+  dependency   Task   @relation("TaskDependents", fields: [dependencyId], references: [id], onDelete: Cascade)
 
   @@unique([taskId, dependencyId])
 }
 
 model Subtask {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   taskId      String
   title       String
   completedAt DateTime?
-  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
 }
 
 model Label {
@@ -331,8 +348,8 @@ model Label {
 model TaskLabel {
   taskId  String
   labelId String
-  task    Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  label   Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+  task    Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
 
   @@id([taskId, labelId])
 }
@@ -360,7 +377,7 @@ model Attachment {
   fileName       String
   contentType    String
   byteSize       Int
-  status         String    @default("pending")
+  status         String       @default("pending")
   uploadedAt     DateTime?
   createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -370,51 +387,51 @@ model Attachment {
 }
 
 model Meeting {
-  id             String            @id @default(cuid())
-  organizationId String
-  projectId      String?
-  creatorId      String
-  title          String
-  description    String            @default("")
-  startAt        DateTime
-  endAt          DateTime
-  timezone       String
-  status         String            @default("scheduled")
-  cancelledAt    DateTime?
-  location       String            @default("")
-  videoUrl       String            @default("")
-  provider       String?
+  id              String                   @id @default(cuid())
+  organizationId  String
+  projectId       String?
+  creatorId       String
+  title           String
+  description     String                   @default("")
+  startAt         DateTime
+  endAt           DateTime
+  timezone        String
+  status          String                   @default("scheduled")
+  cancelledAt     DateTime?
+  location        String                   @default("")
+  videoUrl        String                   @default("")
+  provider        String?
   externalEventId String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  project        Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  attendees      MeetingAttendee[]
-  mappings       MeetingExternalMapping[]
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project         Project?                 @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  attendees       MeetingAttendee[]
+  mappings        MeetingExternalMapping[]
 
-  @@index([organizationId, startAt])
   @@unique([organizationId, provider, externalEventId])
+  @@index([organizationId, startAt])
 }
 
 model MeetingAttendee {
-  id           String                 @id @default(cuid())
+  id           String                  @id @default(cuid())
   meetingId    String
   membershipId String?
   email        String
-  meeting      Meeting                @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meeting      Meeting                 @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   membership   OrganizationMembership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
 
   @@index([meetingId])
 }
 
 model MeetingExternalMapping {
-  id                String   @id @default(cuid())
-  meetingId         String
-  provider          String
-  externalEventId   String
+  id                 String  @id @default(cuid())
+  meetingId          String
+  provider           String
+  externalEventId    String
   externalCalendarId String?
-  syncVersion       String?
-  meeting           Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  syncVersion        String?
+  meeting            Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
 
   @@unique([provider, externalEventId])
 }
@@ -428,7 +445,7 @@ model Notification {
   body           String
   resourceType   String?
   resourceId     String?
-  dedupeKey      String?        @unique
+  dedupeKey      String?      @unique
   readAt         DateTime?
   createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -437,7 +454,7 @@ model Notification {
 }
 
 model NotificationPreference {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   userId    String
   channel   String
   eventType String
@@ -447,14 +464,14 @@ model NotificationPreference {
 }
 
 model IntegrationConnection {
-  id             String       @id @default(cuid())
+  id             String                    @id @default(cuid())
   organizationId String
   provider       String
-  status         String       @default("connected")
+  status         String                    @default("connected")
   encryptedToken String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  organization   Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   accounts       IntegrationAccount[]
   webhookEvents  IntegrationWebhookEvent[]
 
@@ -462,7 +479,7 @@ model IntegrationConnection {
 }
 
 model IntegrationAccount {
-  id           String               @id @default(cuid())
+  id           String                @id @default(cuid())
   connectionId String
   externalId   String
   displayName  String
@@ -472,11 +489,11 @@ model IntegrationAccount {
 }
 
 model IntegrationWebhookEvent {
-  id           String               @id @default(cuid())
+  id           String                @id @default(cuid())
   connectionId String
   provider     String
   eventId      String
-  receivedAt   DateTime             @default(now())
+  receivedAt   DateTime              @default(now())
   processedAt  DateTime?
   connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
@@ -484,7 +501,7 @@ model IntegrationWebhookEvent {
 }
 
 model ExternalResourceMapping {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   provider       String
   resourceType   String
@@ -551,28 +568,28 @@ model AiMessage {
 }
 
 model AiRun {
-  id             String         @id @default(cuid())
-  conversationId String
-  capability     String
-  model          String
-  status         String
-  confirmationNonce String?      @unique
-  confirmedAt    DateTime?
-  latencyMs      Int?
-  createdAt      DateTime       @default(now())
-  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  usage           AiUsageRecord?
+  id                String         @id @default(cuid())
+  conversationId    String
+  capability        String
+  model             String
+  status            String
+  confirmationNonce String?        @unique
+  confirmedAt       DateTime?
+  latencyMs         Int?
+  createdAt         DateTime       @default(now())
+  conversation      AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  usage             AiUsageRecord?
 }
 
 model AiUsageRecord {
-  id          String   @id @default(cuid())
-  runId       String   @unique
+  id             String       @id @default(cuid())
+  runId          String       @unique
   organizationId String
-  inputTokens Int?
-  outputTokens Int?
-  estimatedCost Decimal? @db.Decimal(12, 6)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  run         AiRun    @relation(fields: [runId], references: [id], onDelete: Cascade)
+  inputTokens    Int?
+  outputTokens   Int?
+  estimatedCost  Decimal?     @db.Decimal(12, 6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  run            AiRun        @relation(fields: [runId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }
@@ -588,15 +605,15 @@ model BillingWebhookEvent {
 }
 
 model Subscription {
-  id             String       @id @default(cuid())
-  organizationId String       @unique
-  provider       String       @default("stripe")
-  externalId     String?      @unique
-  status         String
-  planKey        String
+  id               String                    @id @default(cuid())
+  organizationId   String                    @unique
+  provider         String                    @default("stripe")
+  externalId       String?                   @unique
+  status           String
+  planKey          String
   currentPeriodEnd DateTime?
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  entitlements   SubscriptionEntitlement[]
+  organization     Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  entitlements     SubscriptionEntitlement[]
 }
 
 model SubscriptionEntitlement {
@@ -604,7 +621,7 @@ model SubscriptionEntitlement {
   subscriptionId String
   key            String
   value          String
-  subscription   Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   @@unique([subscriptionId, key])
 }
