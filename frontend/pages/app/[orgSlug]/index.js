@@ -65,8 +65,14 @@ function ProjectPulse({ projects, orgSlug }) {
 function HomeContent({ orgSlug }) {
   const auth = useAuth(); const { getToken, user } = auth; const { status } = useClerkPageState(auth, orgSlug);
   const [projects, setProjects] = useState([]); const [tasks, setTasks] = useState([]); const [meetings, setMeetings] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  useEffect(() => {
+    setProjects([]);
+    setTasks([]);
+    setMeetings([]);
+    setError('');
+  }, [orgSlug]);
   const load = useCallback(async () => { setLoading(true); setError(''); try { const token = await getToken(); const [projectResult, taskResult, meetingResult] = await Promise.all([saasApi.listProjects(token), saasApi.listTasks({}, token), saasApi.listMeetings({}, token)]); setProjects(projectResult.projects || []); setTasks(taskResult.tasks || []); setMeetings(meetingResult.meetings || []); } catch (err) { setError(err instanceof ApiError ? err.message : 'Workspace data is unavailable.'); } finally { setLoading(false); } }, [getToken]);
-  useEffect(() => { if (!status) load(); }, [load, status]);
+  useEffect(() => { if (!status) load(); }, [load, status, orgSlug]);
   const focusTask = useMemo(() => { const open = openTasks(tasks); return open.slice().sort((a, b) => { const aScore = a.status === 'blocked' ? 0 : isOverdue(a) ? 1 : isDueToday(a) ? 2 : 3; const bScore = b.status === 'blocked' ? 0 : isOverdue(b) ? 1 : isDueToday(b) ? 2 : 3; return aScore - bScore || new Date(a.dueAt || '9999-12-31') - new Date(b.dueAt || '9999-12-31'); })[0]; }, [tasks]);
   const handled = tasks.filter((task) => task.status === 'done').length; const blocked = tasks.filter((task) => task.status === 'blocked').length;
   if (status) return <WorkspaceFrame orgSlug={orgSlug} active="Home"><p className="muted" role="status">{status}</p></WorkspaceFrame>;

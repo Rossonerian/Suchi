@@ -25,6 +25,12 @@ function TaskContent({ orgSlug, taskId }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setTask(null);
+    setError('');
+  }, [taskId, orgSlug]);
+
   useEffect(() => {
     if (status) return undefined;
     let active = true;
@@ -36,7 +42,7 @@ function TaskContent({ orgSlug, taskId }) {
       setTask(next); setProjects(projectResult.projects || []); setForm({ title: next.title || '', description: next.description || '', status: next.status || 'todo', priority: next.priority || 'none', dueAt: taskDate(next.dueAt) });
     }).catch((err) => { if (active) setError(err instanceof ApiError ? err.message : 'Task details are unavailable.'); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [auth, status, taskId]);
+  }, [auth, status, taskId, orgSlug]);
   function change(field, value) { setForm((current) => ({ ...current, [field]: value })); }
   async function save(event) {
     event.preventDefault();

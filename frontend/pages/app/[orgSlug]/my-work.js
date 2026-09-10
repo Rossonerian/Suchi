@@ -19,11 +19,17 @@ function WorkGroup({ title, description, tasks, orgSlug }) {
 
 function MyWorkContent({ orgSlug }) {
   const auth = useAuth();
-  const { getToken, userId } = auth;
+  const { getToken } = auth;
+  const userId = auth.userId || auth.user?.id;
   const { status } = useClerkPageState(auth, orgSlug);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setTasks([]);
+    setError('');
+  }, [orgSlug]);
 
   useEffect(() => {
     if (status) return undefined;
@@ -42,7 +48,7 @@ function MyWorkContent({ orgSlug }) {
     }
     load();
     return () => { active = false; };
-  }, [getToken, userId, status]);
+  }, [getToken, userId, status, orgSlug]);
 
   const groups = useMemo(() => {
     const now = new Date();

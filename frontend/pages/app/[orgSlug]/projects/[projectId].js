@@ -16,13 +16,19 @@ function ProjectContent({ orgSlug, projectId }) {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setProject(null);
+    setError('');
+  }, [projectId, orgSlug]);
+
   useEffect(() => {
     if (status) return undefined;
     let active = true;
     setLoading(true); setError('');
     auth.getToken().then((token) => saasApi.getProject(projectId, token)).then((result) => { if (active) setProject(result.project || null); }).catch((err) => { if (active) setError(err instanceof ApiError ? err.message : 'Project details are unavailable.'); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [auth, projectId, status]);
+  }, [auth, projectId, status, orgSlug]);
   const tasks = useMemo(() => project?.tasks || [], [project?.tasks]);
   const progress = useMemo(() => taskProgress(tasks), [tasks]);
   if (status) return <WorkspaceFrame orgSlug={orgSlug} active="Projects"><p className="muted" role="status">{status}</p></WorkspaceFrame>;

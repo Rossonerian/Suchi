@@ -8,7 +8,8 @@ test('converts a wall-clock time in a named timezone to the correct instant', ()
 });
 
 test('formats meeting time using the saved timezone', () => {
-  assert.match(formatMeetingTime('2026-01-15T04:00:00.000Z', 'Asia/Kolkata'), /Jan 15, 2026/);
+  assert.match(formatMeetingTime('2026-01-15T04:00:00.000Z', 'Asia/Kolkata'), /(Jan 15, 2026|15 Jan 2026)/);
+  assert.match(formatMeetingTime('2026-01-15T04:00:00.000Z', 'Asia/Kolkata', { locale: 'en-US' }), /Jan 15, 2026/);
 });
 
 test('resolves valid wall-clock times immediately after DST starts', () => {

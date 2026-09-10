@@ -1,52 +1,73 @@
+import { getDaysInMonth } from 'date-fns';
+
+function pad(value) {
+  return String(value).padStart(2, '0');
+}
+
 function partsForTimeZone(date, timeZone) {
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone,
-    hour12: false,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    hourCycle: 'h23',
   });
-  return Object.fromEntries(formatter.formatToParts(date).filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]));
+  return Object.fromEntries(formatter.formatToParts(date).map(part => [part.type, part.value]));
 }
 
-function wallClockParts(value) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
-  if (!match) throw new Error('Enter a valid date and time.');
-  const [, year, month, day, hour, minute, second = '00'] = match;
-  return { year, month, day, hour, minute, second };
-}
-
-function wallClockAsUtc(parts) {
-  return Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
-}
-
-function sameWallClock(parts, expected) {
-  // Some Intl implementations represent midnight as 24:xx. Treat it as the
-  // start of that displayed day for a stable comparison.
-  return parts.year === expected.year && parts.month === expected.month && parts.day === expected.day && (parts.hour === expected.hour || (expected.hour === '00' && parts.hour === '24')) && parts.minute === expected.minute && parts.second === expected.second;
+function sameWallClock(parts, target) {
+  return (
+    parts.year === target.year &&
+    parts.month === target.month &&
+    parts.day === target.day &&
+    parts.hour === target.hour &&
+    parts.minute === target.minute
+  );
 }
 
 function resolveWallClock(value, timeZone) {
-  const expected = wallClockParts(value);
-  const wallClock = wallClockAsUtc(expected);
-  // A local time can be ambiguous during a fall-back transition. Seed from
-  // both sides of the transition and choose the earlier valid instant. A
-  // spring-forward time has no valid candidate and is rejected below.
-  const seeds = [wallClock, wallClock - 86_400_000, wallClock + 86_400_000, wallClock - 3_600_000, wallClock + 3_600_000];
-  const candidates = new Set();
+  const [datePart, timePart] = value.split('T');
+  if (!datePart || !timePart) throw new Error('Invalid datetime value.');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute] = timePart.split(':').map(Number);
+  const expected = {
+    year: String(year),
+    month: pad(month),
+    day: pad(day),
+    hour: pad(hour),
+    minute: pad(minute),
+  };
 
-  for (const seed of seeds) {
-    let candidate = seed;
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const displayed = partsForTimeZone(new Date(candidate), timeZone);
-      const displayedAsUtc = wallClockAsUtc({ ...displayed, hour: displayed.hour === '24' ? '00' : displayed.hour });
-      const next = candidate + (wallClock - displayedAsUtc);
-      if (next === candidate) break;
-      candidate = next;
-    }
+  const naiveUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+  const candidates = new Set();
+  const offsetsToProbe = [
+    0,
+    -14 * 60,
+    -12 * 60,
+    -10 * 60,
+    -8 * 60,
+    -6 * 60,
+    -5 * 60,
+    -4 * 60,
+    0,
+    60,
+    2 * 60,
+    3 * 60,
+    4 * 60,
+    5 * 60,
+    5.5 * 60,
+    6 * 60,
+    8 * 60,
+    9 * 60,
+    10 * 60,
+    12 * 60,
+  ];
+
+  for (const offsetMinutes of offsetsToProbe) {
+    const candidate = naiveUtc - offsetMinutes * 60 * 1000;
     if (sameWallClock(partsForTimeZone(new Date(candidate), timeZone), expected)) candidates.add(candidate);
   }
 
@@ -65,10 +86,11 @@ export function localDateTimeToIso(value, timeZone) {
 
 export function formatMeetingTime(iso, timeZone, options = {}) {
   if (!iso) return 'Time unavailable';
+  const { locale, ...formatOptions } = options;
   try {
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone, ...options }).format(new Date(iso));
+    return new Intl.DateTimeFormat(locale || undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone, ...formatOptions }).format(new Date(iso));
   } catch {
-    return new Date(iso).toLocaleString();
+    return new Date(iso).toLocaleString(locale || undefined);
   }
 }
 
@@ -83,7 +105,14 @@ export function isoToLocalDateTime(iso, timeZone) {
  * value untouched. This matters during the repeated hour at DST fall-back,
  * where a datetime-local input cannot represent which occurrence was meant.
  */
-export function localDateTimeToIsoPreservingInstant(originalIso, value, timeZone, originalTimeZone = timeZone) {
-  if (originalIso && originalTimeZone === timeZone && isoToLocalDateTime(originalIso, timeZone) === value) return originalIso;
-  return localDateTimeToIso(value, timeZone);
+export function localDateTimeToIsoPreservingInstant(originalIso, nextWallClock, nextTimeZone, originalTimeZone) {
+  if (!nextWallClock) return null;
+  if (!originalIso) return localDateTimeToIso(nextWallClock, nextTimeZone);
+  const zoneToUse = nextTimeZone || originalTimeZone;
+  if (originalTimeZone && nextTimeZone && originalTimeZone !== nextTimeZone) {
+    return localDateTimeToIso(nextWallClock, nextTimeZone);
+  }
+  const originalWallClock = isoToLocalDateTime(originalIso, zoneToUse);
+  if (originalWallClock === nextWallClock) return originalIso;
+  return localDateTimeToIso(nextWallClock, zoneToUse);
 }

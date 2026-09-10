@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../../lib/better-auth-client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiError, saasApi } from '../../../lib/api';
 import { proposalFields } from '../../../lib/ai-proposals.mjs';
@@ -20,6 +20,15 @@ function ProposalCard({ proposal, orgSlug, busy, onConfirm, onDiscard }) {
 
 function AiContent({ orgSlug }) {
   const auth = useAuth(); const { getToken } = auth; const { status } = useClerkPageState(auth, orgSlug); const [question, setQuestion] = useState(''); const [messages, setMessages] = useState([]); const [proposals, setProposals] = useState([]); const [conversationId, setConversationId] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+
+  useEffect(() => {
+    setQuestion('');
+    setMessages([]);
+    setProposals([]);
+    setConversationId('');
+    setError('');
+  }, [orgSlug]);
+
   async function ask(event) { event.preventDefault(); if (!question.trim() || busy) return; setBusy(true); setError(''); const submitted = question.trim(); setMessages((current) => [...current, { role: 'user', content: submitted }]); setQuestion(''); try { const result = await saasApi.askAi({ question: submitted, conversationId: conversationId || undefined }, await getToken()); setConversationId(result.conversationId || ''); setMessages((current) => [...current, { role: 'assistant', content: result.answer || 'No answer was returned.' }]); setProposals((current) => [...current, ...(result.proposals || [])]); } catch (err) { const message = err instanceof ApiError ? err.message : 'The assistant is unavailable.'; setError(message); toast.error(message); } finally { setBusy(false); } }
   async function confirm(proposal) { setBusy(true); setError(''); try { const result = await saasApi.confirmAiWrite(proposal.confirmationToken, await getToken()); setProposals((current) => current.filter((item) => item !== proposal)); const id = result.task?.id; setMessages((current) => [...current, { role: 'assistant', content: id ? `Created “${result.task?.title || 'task'}”.` : 'The proposed change was completed.' , href: id ? `/app/${orgSlug}/tasks/${encodeURIComponent(id)}` : null }]); toast.success('AI change completed'); } catch (err) { const message = err instanceof ApiError ? err.message : 'Unable to confirm this change.'; setError(message); toast.error(message); } finally { setBusy(false); } }
   function discard(proposal) { setProposals((current) => current.filter((item) => item !== proposal)); toast.success('Proposal discarded'); }

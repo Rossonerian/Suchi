@@ -99,6 +99,8 @@ export function BetterAuthProvider({ children }) {
   const value = useMemo(() => ({
     ...state,
     user: state.session?.user || null,
+    userId: state.session?.user?.id || null,
+    sessionId: state.session?.session?.id || null,
     isSignedIn: Boolean(state.session?.user),
     getToken: async () => '',
     signOut,

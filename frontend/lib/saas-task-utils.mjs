@@ -36,7 +36,11 @@ export function taskFiltersFromQuery(query = {}) {
 
 export function dateInputToIso(value) {
   if (!value) return null;
-  const date = new Date(`${value}T23:59:59`);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value).trim());
+  if (match) {
+    return `${match[1]}-${match[2]}-${match[3]}T23:59:59.000Z`;
+  }
+  const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
@@ -53,5 +57,8 @@ export function isOverdue(task, now = new Date()) {
 export function isDueToday(task, now = new Date()) {
   if (!task.dueAt || ['done', 'cancelled'].includes(task.status)) return false;
   const due = new Date(task.dueAt);
-  return due.getUTCFullYear() === now.getUTCFullYear() && due.getUTCMonth() === now.getUTCMonth() && due.getUTCDate() === now.getUTCDate();
+  const dueUtc = `${due.getUTCFullYear()}-${String(due.getUTCMonth() + 1).padStart(2, '0')}-${String(due.getUTCDate()).padStart(2, '0')}`;
+  const nowUtc = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+  const nowLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return dueUtc === nowUtc || dueUtc === nowLocal;
 }

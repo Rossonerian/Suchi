@@ -1,4 +1,4 @@
-import { useWorkspace } from '../src/workspace';
+import { useWorkspace, Workspace } from '../src/workspace';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Link } from 'expo-router';
@@ -8,8 +8,7 @@ import { MobileNav, useNavVisibility } from '../src/MobileNav';
 type Proposal = { operation?: string; confirmationToken: string; arguments: Record<string, unknown> };
 function proposalEntries(proposal: Proposal) { return Object.entries(proposal.arguments || {}).filter(([, value]) => value !== undefined && value !== null && value !== ''); }
 
-export default function AiScreen() {
-  const { activeWorkspace, getAuthCookie } = useWorkspace();
+function AiContent({ activeWorkspace, getAuthCookie }: { activeWorkspace: Workspace; getAuthCookie: () => Promise<string> }) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -18,6 +17,7 @@ export default function AiScreen() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const nav = useNavVisibility();
+
   async function ask() {
     if (!question.trim() || busy) return;
     setBusy(true); setError('');
@@ -31,5 +31,22 @@ export default function AiScreen() {
     catch (err) { setError(err instanceof Error ? err.message : 'Unable to confirm the change.'); }
     finally { setBusy(false); }
   }
-  return <View className="flex-1 bg-background"><ScrollView onScroll={nav.onScroll} scrollEventThrottle={16} className="px-5 pt-14" contentContainerStyle={{ paddingBottom: 104 }}><Link href="/workspace" className="mb-4 text-primary">← Workspace</Link><Text className="text-2xl font-bold text-foreground">AI assistant</Text><Text className="mt-2 text-muted">Ask about authorized workspace data. Writes require confirmation.</Text><Text className="mt-2 text-xs text-muted">Context: {activeWorkspace?.name || 'active workspace'}</Text>{answer ? <View accessibilityLiveRegion="polite" className="mt-6 rounded-[22px] border border-border bg-surface p-4"><Text className="text-sm text-muted">Assistant</Text><Text className="mt-2 text-foreground">{answer}</Text>{createdTaskId ? <Link href={{ pathname: '/tasks/[taskId]', params: { taskId: createdTaskId } }} className="mt-2 text-primary">Open created task</Link> : null}</View> : null}{proposals.map((proposal, index) => <View key={`${proposal.confirmationToken}-${index}`} className="mt-4 rounded-[22px] border border-primary bg-surface p-4"><Text className="font-semibold text-foreground">{proposal.operation || 'Proposed change'}</Text><Text className="mt-1 text-sm text-muted">Workspace: {activeWorkspace?.name || 'active workspace'}. Review every field before confirming.</Text><View className="mt-3 gap-2">{proposalEntries(proposal).map(([key, value]) => <View key={key} className="rounded-xl border border-border bg-raised p-2"><Text className="text-xs text-muted">{key}</Text><Text className="mt-1 text-foreground">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</Text></View>)}</View><View className="mt-3 flex-row gap-2"><Pressable accessibilityRole="button" className="min-h-12 flex-1 items-center justify-center rounded-xl bg-primary" onPress={() => Alert.alert('Confirm change', 'Create this change in the active organization?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Confirm', onPress: () => confirm(proposal) }])} disabled={busy}><Text className="font-semibold text-primary-foreground">Confirm</Text></Pressable><Pressable accessibilityRole="button" className="min-h-12 flex-1 items-center justify-center rounded-xl border border-border" onPress={() => setProposals((current) => current.filter((item) => item !== proposal))} disabled={busy}><Text className="font-semibold text-foreground">Discard</Text></Pressable></View></View>)}<TextInput accessibilityLabel="Question" className="mt-6 min-h-28 rounded-[18px] border border-border bg-surface p-4 text-foreground" multiline value={question} onChangeText={setQuestion} placeholder="What tasks are overdue?" placeholderTextColor="#777C89" /><Pressable accessibilityRole="button" accessibilityLabel="Ask assistant" className="mt-3 min-h-12 items-center justify-center rounded-xl bg-primary" onPress={ask} disabled={busy || !question.trim()}>{busy ? <ActivityIndicator color="#0D0E13" /> : <Text className="font-semibold text-primary-foreground">Ask assistant</Text>}</Pressable>{error ? <Text accessibilityRole="alert" className="mt-3 text-danger">{error}</Text> : null}</ScrollView><MobileNav hidden={nav.hidden} onReveal={nav.reveal} /></View>;
+  return <View className="flex-1 bg-background"><ScrollView onScroll={nav.onScroll} scrollEventThrottle={16} className="px-5 pt-14" contentContainerStyle={{ paddingBottom: 104 }}><Link href="/workspace" className="mb-4 text-primary">← Workspace</Link><Text className="text-2xl font-bold text-foreground">AI assistant</Text><Text className="mt-2 text-muted">Ask about authorized workspace data. Writes require confirmation.</Text><Text className="mt-2 text-xs text-muted">Context: {activeWorkspace.name}</Text>{answer ? <View accessibilityLiveRegion="polite" className="mt-6 rounded-[22px] border border-border bg-surface p-4"><Text className="text-sm text-muted">Assistant</Text><Text className="mt-2 text-foreground">{answer}</Text>{createdTaskId ? <Link href={{ pathname: '/tasks/[taskId]', params: { taskId: createdTaskId } }} className="mt-2 text-primary">Open created task</Link> : null}</View> : null}{proposals.map((proposal, index) => <View key={`${proposal.confirmationToken}-${index}`} className="mt-4 rounded-[22px] border border-primary bg-surface p-4"><Text className="font-semibold text-foreground">{proposal.operation || 'Proposed change'}</Text><Text className="mt-1 text-sm text-muted">Workspace: {activeWorkspace.name}. Review every field before confirming.</Text><View className="mt-3 gap-2">{proposalEntries(proposal).map(([key, value]) => <View key={key} className="rounded-xl border border-border bg-raised p-2"><Text className="text-xs text-muted">{key}</Text><Text className="mt-1 text-foreground">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</Text></View>)}</View><View className="mt-3 flex-row gap-2"><Pressable accessibilityRole="button" className="min-h-12 flex-1 items-center justify-center rounded-xl bg-primary" onPress={() => Alert.alert('Confirm change', 'Create this change in the active organization?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Confirm', onPress: () => confirm(proposal) }])} disabled={busy}><Text className="font-semibold text-primary-foreground">Confirm</Text></Pressable><Pressable accessibilityRole="button" className="min-h-12 flex-1 items-center justify-center rounded-xl border border-border" onPress={() => setProposals((current) => current.filter((item) => item !== proposal))} disabled={busy}><Text className="font-semibold text-foreground">Discard</Text></Pressable></View></View>)}<TextInput accessibilityLabel="Question" className="mt-6 min-h-28 rounded-[18px] border border-border bg-surface p-4 text-foreground" multiline value={question} onChangeText={setQuestion} placeholder="What tasks are overdue?" placeholderTextColor="#777C89" /><Pressable accessibilityRole="button" accessibilityLabel="Ask assistant" className="mt-3 min-h-12 items-center justify-center rounded-xl bg-primary" onPress={ask} disabled={busy || !question.trim()}>{busy ? <ActivityIndicator color="#0D0E13" /> : <Text className="font-semibold text-primary-foreground">Ask assistant</Text>}</Pressable>{error ? <Text accessibilityRole="alert" className="mt-3 text-danger">{error}</Text> : null}</ScrollView><MobileNav hidden={nav.hidden} onReveal={nav.reveal} /></View>;
+}
+
+export default function AiScreen() {
+  const { activeWorkspace, getAuthCookie } = useWorkspace();
+
+  if (!activeWorkspace) {
+    return <View className="flex-1 items-center justify-center bg-background px-6">
+      <Text className="mb-4 text-center text-foreground">No active workspace selected.</Text>
+      <Link href="/workspace" asChild>
+        <Pressable accessibilityRole="button" className="rounded-xl bg-primary px-4 py-3">
+          <Text className="font-semibold text-primary-foreground">Choose a workspace</Text>
+        </Pressable>
+      </Link>
+    </View>;
+  }
+
+  return <AiContent key={activeWorkspace.id} activeWorkspace={activeWorkspace} getAuthCookie={getAuthCookie} />;
 }
