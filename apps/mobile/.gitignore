@@ -3,3 +3,6 @@ dist/
 .expo/
 .env
 .env.local
+
+android/
+ios/
