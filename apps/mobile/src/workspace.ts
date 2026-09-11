@@ -28,7 +28,7 @@ export function useWorkspace() {
         setWorkspaces([]);
         return;
       }
-      setWorkspaces((result.data || []).map((organization) => ({ ...organization, role: undefined })));
+      setWorkspaces((result.data || []).map((organization: any) => ({ ...organization, role: undefined })));
     }).catch(() => {
       if (!cancelled) {
         setWorkspaceError('Unable to load workspaces.');
