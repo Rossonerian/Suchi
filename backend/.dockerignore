@@ -1,0 +1,17 @@
+.git
+.github
+.env
+.env.local
+backend/.env
+backend/.env.local
+frontend/.env.local
+node_modules
+*/node_modules
+tests
+*/tests
+coverage
+scratch
+docs
+apps/mobile
+frontend
+*.log
