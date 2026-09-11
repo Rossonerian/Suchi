@@ -93,13 +93,34 @@ test('health and security headers are available without a database session', asy
   assert.ok(response.headers.get('content-security-policy') || response.headers.get('strict-transport-security'));
 });
 
-test('SaaS project API stays unavailable without its authoritative database', async () => {
+test('SaaS project API rejects unauthenticated requests', async () => {
   const response = await request('/api/v1/projects');
-  assert.equal(response.status, 503);
+  assert.equal(response.status, 401);
   assert.deepEqual(await response.json(), {
-    error: 'The SaaS database is not configured.',
-    code: 'SAAS_DATABASE_UNAVAILABLE',
+    error: 'Authentication required.',
+    code: 'UNAUTHENTICATED',
   });
+});
+
+test('SaaS project API stays unavailable without its authoritative database', async () => {
+  const originalDb = process.env.DATABASE_URL;
+  const { resetSaasDatabaseForTests } = await import('../saas/database.js');
+  const { resetAuthForTests } = await import('../saas/auth.js');
+  delete process.env.DATABASE_URL;
+  resetSaasDatabaseForTests();
+  resetAuthForTests();
+  try {
+    const response = await request('/api/v1/projects');
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), {
+      error: 'The SaaS database is not configured.',
+      code: 'SAAS_DATABASE_UNAVAILABLE',
+    });
+  } finally {
+    if (originalDb !== undefined) process.env.DATABASE_URL = originalDb;
+    resetSaasDatabaseForTests();
+    resetAuthForTests();
+  }
 });
 
 test('background job endpoint stays unavailable until Inngest is configured', async () => {
