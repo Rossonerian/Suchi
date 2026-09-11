@@ -10,18 +10,18 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages ./packages
 
-# Install workspace dependencies and generate Prisma client
-RUN npm ci
-RUN npx prisma generate --schema=packages/database/prisma/schema.prisma
+# Install workspace dependencies and generate Prisma client & contract
+RUN npm ci --legacy-peer-deps
+RUN npm --prefix packages/database run generate
 
 # Install backend dependencies
 COPY backend/package.json backend/package-lock.json ./backend/
 WORKDIR /app/backend
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Copy generated Prisma client into backend node_modules so backend can resolve it directly
-RUN cp -r /app/node_modules/@prisma/client /app/backend/node_modules/@prisma/
-RUN cp -r /app/node_modules/.prisma /app/backend/node_modules/ 2>/dev/null || true
+RUN cp -r /app/packages/database/node_modules/@prisma/client /app/backend/node_modules/@prisma/ 2>/dev/null || cp -r /app/node_modules/@prisma/client /app/backend/node_modules/@prisma/
+RUN cp -r /app/packages/database/node_modules/.prisma /app/backend/node_modules/ 2>/dev/null || cp -r /app/node_modules/.prisma /app/backend/node_modules/ 2>/dev/null || true
 
 # Stage 2: Minimal production runtime
 FROM node:22-slim AS runner

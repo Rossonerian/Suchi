@@ -12,11 +12,13 @@
     "db:migrate:deploy": "npm --prefix packages/database run migrate:deploy",
     "db:validate": "npm --prefix packages/database run validate",
     "db:generate": "npm --prefix packages/database run generate",
-    "db:status": "npm --prefix packages/database run migrate:status"
+    "db:status": "npm --prefix packages/database run migrate:status",
+    "db:sign": "npm --prefix packages/database run db:sign",
+    "db:verify": "npm --prefix packages/database run db:verify"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
-    "prisma": "7.10.0",
+    "prisma": "^8.0.0-rc.13",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   },

@@ -4,18 +4,25 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate": "prisma validate --schema prisma/schema.prisma",
-    "generate": "prisma generate --schema prisma/schema.prisma",
-    "migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
-    "migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
-    "migrate:status": "prisma migrate status --schema prisma/schema.prisma"
+    "validate": "prisma contract emit",
+    "contract:emit": "prisma contract emit",
+    "contract:infer": "prisma contract infer",
+    "db:sign": "prisma db sign",
+    "db:verify": "prisma db verify",
+    "db:update": "prisma db update",
+    "generate": "prisma7 generate --config prisma7.config.ts && prisma contract emit",
+    "migrate:dev": "prisma7 migrate dev --config prisma7.config.ts",
+    "migrate:deploy": "prisma7 migrate deploy --config prisma7.config.ts",
+    "migrate:status": "prisma7 migrate status --config prisma7.config.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "7.10.0",
+    "@prisma/orm-postgres": "^8.0.0-rc.9",
+    "@prisma/prisma7": "^7.10.0",
     "pg": "^8.23.0"
   },
   "devDependencies": {
-    "prisma": "7.10.0"
+    "prisma": "^8.0.0-rc.13"
   }
 }

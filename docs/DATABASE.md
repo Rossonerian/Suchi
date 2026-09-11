@@ -2,31 +2,25 @@
 
 ## ADR-001: PostgreSQL with Prisma
 
-**Status:** Phase 1 schema and initial migration implemented; application
-repositories are not yet switched from MongoDB.
+**Status:** PostgreSQL selected as the primary relational persistence layer for Suchi SaaS.
 
 The target product has relational membership, project, task dependency,
 meeting attendee, integration, audit, usage, and billing invariants. PostgreSQL
 provides foreign keys, unique constraints, row-level query predicates, and
-transactions that match those invariants better than the current globally
-queried MongoDB collections. Prisma provides generated TypeScript types, schema
-migrations, and a mature PostgreSQL adapter. Prisma 7.10.0 was selected after
-checking npm compatibility with the current Node 20+/22 CI baseline. Prisma 8
-is currently a release candidate with a newer Node floor, so it is not used
-during this incremental migration.
+transactions that match those invariants better than globally queried document
+stores. Prisma provides generated TypeScript types, schema migrations, and a mature
+PostgreSQL adapter.
 
-Alternatives considered:
+## ADR-002: Prisma 8 Contract-First Schema & PostgreSQL Alignment
 
-- **Drizzle:** credible and SQL-first, but would require more handwritten query
-  and repository conventions for this team's first relational migration.
-- **Keep MongoDB:** lowest short-term migration cost, but leaves relational
-  isolation and multi-entity transactions harder to enforce as features grow.
-- **Supabase direct client access:** rejected for the application boundary;
-  mobile and browser clients must never connect directly to the database.
+**Status:** Implemented and verified across monorepo and Docker backend.
 
-References: [Prisma PostgreSQL quickstart](https://docs.prisma.io/docs/prisma-orm/quickstart/postgresql),
-[Prisma transactions](https://www.prisma.io/docs/orm/fundamentals/transactions),
-[Drizzle migrations](https://orm.drizzle.team/docs/migrations).
+Suchi upgraded its database architecture to **Prisma 8** (`prisma@8.0.0-rc.13`, `@prisma/orm-postgres@8.0.0-rc.9`):
+
+1. **Contract-First Architecture**: Authoritative schema contract defined in `packages/database/prisma/contract.prisma` using `prisma.config.ts`. Compiles into typed contracts (`prisma/contract.json`, `prisma/contract.d.ts`).
+2. **Schema Verification & Signing**: `prisma db sign` records schema verification markers; `prisma db verify` validates schema integrity and eliminates drift.
+3. **Better Auth Option B Compatibility**: Authentication tables (`AuthUser`, `AuthSession`, `AuthAccount`, `AuthVerification`) interface with `@better-auth/prisma-adapter` and `@prisma/client` runtime generated via `prisma7 generate --config prisma7.config.ts`.
+4. **Relational Constraints**: Migration `20260911180000_prisma8_contract_constraints` elevates unique indexes on 1:1 relation foreign keys (`UserProfile.authUserId`, `AiUsageRecord.runId`, `OrganizationSettings.organizationId`, `Subscription.organizationId`, `Subscription.externalId`) into official PostgreSQL `UNIQUE` constraints using existing indexes.
 
 ## Target entities
 
@@ -37,10 +31,11 @@ deliberately; no implicit cross-tenant lookup is allowed.
 Core tables:
 
 ```text
-UserProfile
+AuthUser, AuthSession, AuthAccount, AuthVerification (Better Auth)
+UserProfile (authUserId -> AuthUser)
 Organization
 OrganizationSettings
-OrganizationMembership (Clerk membership mirror/metadata)
+OrganizationMembership
 Team, TeamMember
 Project, ProjectMember, Milestone
 Task, TaskAssignee, TaskDependency, Subtask
@@ -57,7 +52,7 @@ Subscription, SubscriptionEntitlement, UsageCounter
 Suggested invariants and indexes:
 
 - unique `(organizationId, slug)` for organizations/projects where applicable;
-- unique `(organizationId, clerkUserId)` for local user metadata;
+- unique `(organizationId, authUserId)` for local user metadata;
 - unique `(organizationId, projectId, userId)` for project membership;
 - unique `(organizationId, taskId, dependencyTaskId)` for dependencies;
 - indexes on `(organizationId, status, dueAt)`, `(organizationId, projectId)`,
@@ -66,7 +61,3 @@ Suggested invariants and indexes:
 - soft-delete/archive fields for user-visible resources where recovery matters;
 - transactions for membership changes, task dependency updates, event mapping,
   subscription/webhook state, and AI proposed-write confirmation.
-
-The full Prisma schema and committed initial migration live in
-`packages/database/prisma/`; the existing Express routes still use MongoDB
-until service-by-service cutover is covered by integration tests.
