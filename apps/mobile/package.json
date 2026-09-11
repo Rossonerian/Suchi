@@ -1,5 +1,5 @@
 {
-  "name": "@nidar/mobile",
+  "name": "@suchi/mobile",
   "version": "0.1.0",
   "private": true,
   "main": "expo-router/entry",
@@ -12,10 +12,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@better-auth/expo": "1.7.3",
+    "@better-auth/expo": "^1.7.3",
     "@expo/metro-runtime": "~57.0.15",
     "@tanstack/react-query": "^5.102.8",
-    "better-auth": "1.7.3",
+    "better-auth": "^1.7.3",
     "expo": "~57.0.21",
     "expo-constants": "^57.0.17",
     "expo-linking": "^57.0.9",
@@ -23,6 +23,7 @@
     "expo-router": "~57.0.20",
     "expo-secure-store": "^57.0.3",
     "expo-web-browser": "57.0.2",
+    "fetch-nodeshim": "^0.4.10",
     "nativewind": "^4.2.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",

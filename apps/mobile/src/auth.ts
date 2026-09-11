@@ -13,7 +13,7 @@ export const apiBaseUrl = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:
 export const authClient = createAuthClient({
   baseURL: `${apiBaseUrl}/api/auth`,
   plugins: [
-    expoClient({ scheme: 'nidar', storagePrefix: 'nidar', storage: SecureStore }),
+    expoClient({ scheme: 'suchi', storagePrefix: 'suchi', storage: SecureStore }),
     organizationClient(),
   ],
 });
@@ -27,12 +27,12 @@ export async function getAuthCookie() {
 export async function signInWithGoogle() {
   return authClient.signIn.social({
     provider: 'google',
-    callbackURL: 'nidar://workspace',
+    callbackURL: 'suchi://workspace',
   });
 }
 
 export async function signInWithEmail(email: string, password: string) {
-  return authClient.signIn.email({ email, password, callbackURL: 'nidar://workspace' });
+  return authClient.signIn.email({ email, password, callbackURL: 'suchi://workspace' });
 }
 
 export async function signOut() {

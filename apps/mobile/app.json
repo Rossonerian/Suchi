@@ -1,14 +1,27 @@
 {
   "expo": {
-    "name": "NIDAR Workspace",
-    "slug": "nidar-workspace",
-    "scheme": "nidar",
+    "name": "Suchi",
+    "slug": "suchi",
+    "scheme": "suchi",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "plugins": ["expo-router", "expo-secure-store", "expo-notifications"],
-    "ios": { "supportsTablet": true, "bundleIdentifier": "com.nidar.workspace" },
-    "android": { "package": "com.nidar.workspace" },
-    "extra": { "router": { "origin": false } }
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-notifications"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.suchi.workspace"
+    },
+    "android": {
+      "package": "com.suchi.workspace"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
   }
 }

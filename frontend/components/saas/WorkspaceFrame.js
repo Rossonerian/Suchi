@@ -126,7 +126,7 @@ function WorkspaceGate({ orgSlug, children }) {
 
 function WorkspaceBrand({ orgSlug, collapsed, onToggle }) {
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
-  return <div className="workspace-brand"><span className="workspace-brand-mark" aria-hidden="true">N</span><div className="workspace-brand-copy"><p className="eyebrow">NIDAR WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div><button type="button" className="workspace-brand-collapse" onClick={onToggle} aria-label={collapsed ? 'Expand workspace navigation' : 'Collapse workspace navigation'} title={collapsed ? 'Expand navigation' : 'Collapse navigation'}><ToggleIcon aria-hidden="true" /></button><span className="workspace-brand-chevron" aria-hidden="true"><ChevronDown /></span></div>;
+  return <div className="workspace-brand"><span className="workspace-brand-mark" aria-hidden="true">S</span><div className="workspace-brand-copy"><p className="eyebrow">SUCHI WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div><button type="button" className="workspace-brand-collapse" onClick={onToggle} aria-label={collapsed ? 'Expand workspace navigation' : 'Collapse workspace navigation'} title={collapsed ? 'Expand navigation' : 'Collapse navigation'}><ToggleIcon aria-hidden="true" /></button><span className="workspace-brand-chevron" aria-hidden="true"><ChevronDown /></span></div>;
 }
 
 function WorkspaceSwitcher() {

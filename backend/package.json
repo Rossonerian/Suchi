@@ -1,7 +1,7 @@
 {
-  "name": "nidar-airmouse-backend",
+  "name": "suchi-backend",
   "version": "1.0.0",
-  "description": "Backend API for the NIDAR AirMouse mission dashboard",
+  "description": "Backend API for the Suchi workspace platform",
   "main": "server.js",
   "type": "module",
   "engines": {
@@ -14,7 +14,11 @@
     "test": "NODE_ENV=test node --test tests/*.test.js",
     "migrate:saas": "node scripts/migrate-nidar-to-saas.js",
     "create-admin": "node scripts/create-admin.js",
-    "seed:runtime": "node scripts/seed-saas-runtime.js"
+    "seed:runtime": "node scripts/seed-saas-runtime.js",
+    "db:migrate:deploy": "prisma migrate deploy --schema=../packages/database/prisma/schema.prisma",
+    "db:validate": "prisma validate --schema=../packages/database/prisma/schema.prisma",
+    "db:generate": "prisma generate --schema=../packages/database/prisma/schema.prisma",
+    "db:status": "prisma migrate status --schema=../packages/database/prisma/schema.prisma"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",

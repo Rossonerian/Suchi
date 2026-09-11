@@ -18,22 +18,24 @@ export function authConfiguration(env = process.env) {
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
-  if (env.NODE_ENV === 'production' && trustedOrigins.some((origin) => !origin.startsWith('https://') && !origin.startsWith('nidar://'))) {
-    throw new Error('Production trusted origins must use HTTPS or the native NIDAR scheme.');
+  if (env.NODE_ENV === 'production' && trustedOrigins.some((origin) => !origin.startsWith('https://') && !origin.startsWith('suchi://') && !origin.startsWith('nidar://'))) {
+    throw new Error('Production trusted origins must use HTTPS or the native Suchi scheme.');
   }
   if (trustedOrigins.some((origin) => origin.includes('*'))) {
     throw new Error('Trusted origins must be explicit.');
   }
   return {
+    appName: 'Suchi',
     baseURL: baseURL.origin,
     secret: env.BETTER_AUTH_SECRET,
-    trustedOrigins: [...new Set([...trustedOrigins, 'nidar://'])],
+    trustedOrigins: [...new Set([...trustedOrigins, 'suchi://', 'nidar://'])],
   };
 }
 
 export function createAuth(db, env = process.env) {
   const config = authConfiguration(env);
   return betterAuth({
+    appName: 'Suchi',
     baseURL: config.baseURL,
     secret: config.secret,
     trustedOrigins: config.trustedOrigins,
@@ -59,6 +61,7 @@ export function createAuth(db, env = process.env) {
       minPasswordLength: 8,
     },
     advanced: {
+      cookiePrefix: 'suchi',
       useSecureCookies: env.NODE_ENV === 'production',
     },
     rateLimit: {

@@ -23,8 +23,8 @@ export default function Onboarding() {
   return <main className="onboarding-shell">
     <section className="onboarding-card" aria-labelledby="onboarding-title">
       <aside className="onboarding-rail">
-        <span className="workspace-brand-mark" aria-hidden="true">N</span>
-        <p className="signin-kicker">NIDAR WORKSPACE PLATFORM</p>
+        <span className="workspace-brand-mark" aria-hidden="true">S</span>
+        <p className="signin-kicker">SUCHI WORKSPACE PLATFORM</p>
         <h1>Set up your workspace.</h1>
         <p>A few small steps will make your first project useful from the moment you arrive.</p>
         <div className="onboarding-steps" aria-label="Workspace setup progress">

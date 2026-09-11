@@ -1,5 +1,5 @@
 {
-  "name": "@nidar/domain",
+  "name": "@suchi/domain",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,6 +8,6 @@
     "./permissions": "./src/permissions.ts"
   },
   "dependencies": {
-    "@nidar/schemas": "0.1.0"
+    "@suchi/schemas": "0.1.0"
   }
 }

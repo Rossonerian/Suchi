@@ -1,5 +1,5 @@
 {
-  "name": "nidar-saas-platform",
+  "name": "suchi-platform",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -8,7 +8,11 @@
     "test": "npm run test:domain && npm run test:database",
     "test:domain": "tsx --test packages/domain/src/*.test.ts",
     "test:database": "tsx --test packages/database/src/*.test.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:migrate:deploy": "npm --prefix packages/database run migrate:deploy",
+    "db:validate": "npm --prefix packages/database run validate",
+    "db:generate": "npm --prefix packages/database run generate",
+    "db:status": "npm --prefix packages/database run migrate:status"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",

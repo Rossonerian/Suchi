@@ -37,8 +37,8 @@ export function BananiAtmosphere({ children, style }: PropsWithChildren<{ style?
 
 export function BananiMark({ compact = false }: { compact?: boolean }) {
   return (
-    <View accessibilityLabel="NIDAR" style={compact ? styles.markCompact : styles.mark}>
-      <Text style={compact ? styles.markTextCompact : styles.markText}>N</Text>
+    <View accessibilityLabel="Suchi" style={compact ? styles.markCompact : styles.mark}>
+      <Text style={compact ? styles.markTextCompact : styles.markText}>S</Text>
     </View>
   );
 }

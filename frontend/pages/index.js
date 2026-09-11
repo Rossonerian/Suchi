@@ -38,8 +38,8 @@ export default function SignIn() {
   return (
     <main className="signin-shell">
       <section className="signin-stage-copy" aria-labelledby="signin-welcome">
-        <span className="workspace-brand-mark" aria-hidden="true">N</span>
-        <p className="signin-kicker">NIDAR WORKSPACE PLATFORM</p>
+        <span className="workspace-brand-mark" aria-hidden="true">S</span>
+        <p className="signin-kicker">SUCHI WORKSPACE PLATFORM</p>
         <h1 id="signin-welcome">Welcome to focused work.</h1>
         <p className="signin-lede">Bring projects, people, and the next important commitment into one calm workspace.</p>
         <div className="signin-pill-row" aria-label="Product capabilities">
@@ -51,7 +51,7 @@ export default function SignIn() {
       <Card className="signin-panel border-border bg-card text-card-foreground" aria-labelledby="signin-title">
         <CardHeader className="px-0 pt-0">
           <p className="eyebrow"><span aria-hidden="true" />YOUR WORKSPACE AWAITS</p>
-          <CardTitle id="signin-title" className="text-2xl">Sign in to NIDAR</CardTitle>
+          <CardTitle id="signin-title" className="text-2xl">Sign in to Suchi</CardTitle>
           <CardDescription className="lede">Continue to your projects, tasks, and team.</CardDescription>
         </CardHeader>
         <CardContent className="px-0 pb-0">
