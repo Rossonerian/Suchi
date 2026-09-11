@@ -62,7 +62,7 @@ export default function ClaimInvite() {
   return (
     <main className="signin-shell">
       <section className="signin-panel" aria-labelledby="claim-title">
-        <p className="eyebrow"><span aria-hidden="true" />NIDAR ACCESS</p>
+        <p className="eyebrow"><span aria-hidden="true" />SUCHI ACCESS</p>
         <h1 id="claim-title">Claim your invitation</h1>
         {invite ? (
           <>

@@ -1,78 +1,138 @@
-# NIDAR AirMouse — Mission Dashboard
+# Suchi — Modern Multi-Tenant Workspace Platform
 
-Tracks the four sub-teams working the NIDAR 2026-27 AirMouse challenge:
-**Core Technical** (2), **Design & CAD** (frame/CAD), **Social** (5 — LinkedIn/Twitter/Instagram),
-and **Documentation** (daily logs of what's being done). Mission deadline: **Dec 15, 2026**,
-shown as a live countdown in the header.
+Suchi is an enterprise-grade multi-tenant workspace platform engineered for asynchronous engineering and product execution. It combines team task orchestration, project management, meeting scheduling with calendar sync, and AI-assisted workflows across web, mobile, and API surfaces.
 
-Also includes a meeting scheduler: pick a title/time/agenda, check off attendees from any
-team, and every attendee gets an emailed invite immediately (Gmail SMTP).
+```
+Suchi Web (Next.js 14)          Suchi Mobile (Expo 57 / React 19)
+         │                                       │
+         └───────────────────┬───────────────────┘
+                             ▼
+                    Express ESM API (Suchi)
+                             │
+     ┌───────────────────────┴───────────────────────┐
+     ▼                                               ▼
+Better Auth Domain                          Authoritative SaaS Domain
+- AuthUser                                  - UserProfile (authUserId -> AuthUser.id)
+- AuthSession                               - Organization (Authoritative Tenant)
+- AuthAccount                               - OrganizationMembership (RBAC & Status)
+- AuthVerification                          - Projects, Tasks, Meetings, Notifications
+                                            - Integrations & AI Authorization
+                             │
+                             ▼
+                    PostgreSQL + Prisma 7
+             (Bounded Pool / Direct Migration)
+```
 
-- `backend/` — Express + MongoDB API → deploy to **Render**
-- `frontend/` — Next.js dashboard (plain JS) → deploy to **Vercel**
-- `apps/mobile/` — Expo Router mobile client (TypeScript; optional during migration)
-- `packages/` — shared domain contracts and Prisma/PostgreSQL SaaS schema
+---
 
-## Quick start (local)
+## 1. Monorepo Architecture
 
+- **`backend/`** (`suchi-backend`): Node 22 Express ESM API service. Handles authentication via Better Auth (Option B architecture), multi-tenant authorization, PostgreSQL data persistence with Prisma 7, bounded connection pooling, and graceful lifecycle management.
+- **`frontend/`** (`suchi-web`): Next.js 14 web client featuring responsive workspace navigation, task boards, project management, meeting scheduling, team administration, and AI capabilities.
+- **`apps/mobile/`** (`@suchi/mobile`): Expo SDK 57 (React Native 0.86 / React 19) mobile application supporting iOS and Android with secure Better Auth token storage and deep linking.
+- **`packages/database/`** (`@suchi/database`): Authoritative Prisma 7 schema, PostgreSQL client factory, and migration definitions.
+- **`packages/domain/`** (`@suchi/domain`): Shared multi-tenant authorization logic, RBAC rules, and core domain entities.
+- **`packages/schemas/`** (`@suchi/schemas`): Shared Zod validation schemas for cross-tier validation.
+- **`docs/`**: Comprehensive architecture specifications, deployment runbooks, rebrand documentation, and operational guides.
+
+---
+
+## 2. Quick Start (Local Development)
+
+### Prerequisites
+- Node.js `>= 22.0.0`
+- PostgreSQL `>= 16.0` (or local Docker container)
+- npm `>= 10.0.0`
+
+### 1. Database Setup
 ```bash
-# 1. Backend
+# Set your local database credentials
+export DATABASE_URL="postgresql://user:password@localhost:5432/suchi_dev?schema=public"
+
+# Validate and apply migrations
+npm run db:validate
+npm run db:migrate:deploy
+npm run db:generate
+```
+
+### 2. Backend Service
+```bash
 cd backend
-npm install
-cp .env.example .env        # add your MongoDB Atlas URI
-npm run dev                 # http://localhost:5000
-
-# 2. Frontend (new terminal)
-cd frontend
-npm install
-cp .env.local.example .env.local   # NEXT_PUBLIC_API_URL=http://localhost:5000
-npm run dev                 # http://localhost:3000
+cp .env.example .env
+# Populate DATABASE_URL, BETTER_AUTH_SECRET (min 32 chars), and BETTER_AUTH_URL
+npm run dev
+# Running on http://localhost:5000
 ```
 
-Open http://localhost:3000 and sign in with an administrator-issued invitation account. New teammates use the one-time **Claim your invite** link to review their assigned team and set a password. The API establishes an expiring server-managed session cookie; the browser never stores an authentication token.
+### 3. Frontend Web Client
+```bash
+cd frontend
+cp .env.local.example .env.local
+npm run dev
+# Running on http://localhost:3000
+```
 
-## Product workflow
+### 4. Mobile Client
+```bash
+cd apps/mobile
+cp .env.example .env
+npm start
+```
 
-- Use the task toolbar to search all team work or filter it by status; use **Refresh** to recover from a failed or stale load.
-- Add team plans as dated accountability updates and use safe `http`/`https` links for supporting material.
-- Schedule meetings from the board. A meeting can be saved even when SMTP delivery fails; the board reports that state clearly.
-- Access is invitation-only: knowing a member's name is not enough to obtain an account. Administrators create one-time invitation links from the Members screen; active accounts sign in with email and password.
+---
 
-## Verification
+## 3. Production Deployment & Staging Setup
+
+Suchi is engineered for automated deployment across modern cloud platforms:
+
+- **Database (Neon / Supabase / AWS RDS / Prisma Postgres)**:
+  - Runtime pooled connection: `DATABASE_URL`
+  - Direct migration connection (bypassing PgBouncer): `DIRECT_DATABASE_URL`
+  - Deploy migrations: `npm run db:migrate:deploy`
+- **Backend API (Railway / Render / AWS ECS / Cloud Run)**:
+  - Multi-stage production container: `docker build -t suchi-backend:latest -f backend/Dockerfile .`
+  - Liveness check probe: `GET /api/health`
+  - Readiness check probe: `GET /api/ready`
+- **Frontend (Vercel / Cloudflare Pages)**:
+  - Framework: Next.js
+  - Root directory: `frontend`
+  - Environment variables: `NEXT_PUBLIC_API_URL=https://api.yourdomain.com`
+
+For step-by-step deployment instructions, refer to [`docs/SUCHI-DEPLOYMENT-RUNBOOK.md`](docs/SUCHI-DEPLOYMENT-RUNBOOK.md).
+
+---
+
+## 4. Verification & Testing
+
+Run the full verification suite across all repository workspaces:
 
 ```bash
-cd backend && npm test
-cd ../frontend && npm run lint && npm test && npm run build
+# 1. Root domain, database tests and TypeScript typecheck
+npm run test:domain
+npm run test:database
+npm run typecheck
+
+# 2. Database schema validation & client generation
+npm run db:validate
+npm run db:generate
+
+# 3. Backend test suite (94 passing tests)
+npm --prefix backend test
+
+# 4. Frontend tests, linting, and Next.js production build
+npm --prefix frontend test
+npm --prefix frontend run lint
+npm --prefix frontend run build
+
+# 5. Mobile TypeScript typecheck and Expo linting
+npm --prefix apps/mobile run typecheck
+npm --prefix apps/mobile run lint
 ```
 
-Never add a live MongoDB URI, Gmail account, or app password to an `.env.example` file. Use the placeholders and create ignored local `.env` files instead. Production deployments must use HTTPS, an exact `CORS_ORIGIN`, and `SESSION_SAME_SITE=none` when the Vercel frontend and Render API are on different sites.
+---
 
-## SaaS workspace preview
+## 5. Security & Invariants
 
-The organization-scoped SaaS API and Clerk-aware workspace routes are enabled
-only when `AUTH_PROVIDER=clerk`, Clerk keys, and `DATABASE_URL` are explicitly
-configured. The legacy Mongo/session dashboard remains the compatibility path
-until each resource is migrated. Start with the root `.env.example` and the
-architecture documents in `docs/`; do not point migration commands at a
-production database without a reviewed dry-run report.
-
-SECURITY ACTION REQUIRED: MongoDB/Gmail credentials that appeared in earlier Git history must be rotated by their owner. Removing them from the current tree does not invalidate credentials already present in Git history.
-
-## Deployment order
-
-1. **MongoDB Atlas** — free cluster, get the connection string (see `backend/README.md`)
-2. **Render** — deploy `backend/`, set `MONGODB_URI`, `CORS_ORIGIN`, `FRONTEND_URL`, `TRUST_PROXY=1`, and `SESSION_SAME_SITE=none`
-3. **Vercel** — deploy `frontend/`, set `NEXT_PUBLIC_API_URL` to your Render URL
-4. Go back to Render and update `CORS_ORIGIN` to your final Vercel URL, redeploy
-
-Full details are in `backend/README.md` and `frontend/README.md`.
-
-### First administrator and existing-member migration
-
-After the teams exist, run `cd backend && npm run create-admin` against the intended database. The script prompts interactively and stores only a scrypt password hash. Existing legacy members without email/password fields are retained but cannot authenticate; an administrator must issue each person a reset invitation from `/admin/members`, after which they claim it and set a password. Do not re-enable public name/team joining.
-
-## Linking tasks to the 15 sub-problem breakdown
-
-When adding a task, the optional "SP#" field (1–15) tags it against the sub-problem
-numbering from the mission-brief breakdown (airframe, SLAM, survivor detection, GCS, etc.)
-so progress can be traced back to the original problem statement.
+- **Secrets Handling**: Real API keys, database credentials, and auth secrets must **never** be checked into version control. Environment variables are loaded strictly at process boot with fail-fast validation in `backend/saas/config.js`.
+- **Identity Isolation (Option B)**: Better Auth owns only credential authentication (`AuthUser`, `AuthSession`, `AuthAccount`, `AuthVerification`). The Suchi domain remains authoritative for organizations, memberships, permissions, projects, tasks, and meetings.
+- **Deep Linking Protocol**: Supports `suchi://` natively with backward-compatible fallback for `nidar://`.

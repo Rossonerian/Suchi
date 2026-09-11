@@ -1,22 +1,20 @@
-# Database package
+# Database package (`@suchi/database`)
 
-This package contains the target PostgreSQL/Prisma schema. The initial
-migration was generated and applied against a disposable local PostgreSQL 16
-instance; no production database was touched. The legacy Mongo API remains the
-active compatibility surface until tenant-aware services and migration tooling
-exist.
+This package contains the authoritative PostgreSQL/Prisma schema and client for Suchi.
+Prisma 7 manages migrations and database schema generation.
 
 Validate the schema with:
 
 ```bash
-npm run validate --workspace @nidar/database
-npm run generate --workspace @nidar/database
+npm run db:validate
+npm run db:generate
 ```
 
-Database commands require an explicit `DATABASE_URL`; the checked-in Prisma
-config uses a localhost placeholder only so validation remains offline. Apply
-the committed migration with `npm run migrate:deploy --workspace
-@nidar/database` after configuring a development database.
+Database commands require an explicit `DATABASE_URL` (or `DIRECT_DATABASE_URL` for direct DDL migrations).
+Apply committed migrations with:
 
-`src/client.ts` is the server-only Prisma/`pg` adapter. It does not run in the
-browser or mobile clients and deliberately requires `DATABASE_URL` at runtime.
+```bash
+npm run db:migrate:deploy
+```
+
+`src/client.ts` is the server-only Prisma/`pg` adapter. It does not run in browser or mobile clients and requires `DATABASE_URL` at runtime.
