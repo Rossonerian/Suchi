@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages ./packages
 
-# Install workspace dependencies and generate Prisma client & contract
+# Install workspace dependencies and generate Prisma client
 RUN npm ci --legacy-peer-deps
 RUN npm --prefix packages/database run generate
 

@@ -11,16 +11,16 @@ transactions that match those invariants better than globally queried document
 stores. Prisma provides generated TypeScript types, schema migrations, and a mature
 PostgreSQL adapter.
 
-## ADR-002: Prisma 8 Contract-First Schema & PostgreSQL Alignment
+## ADR-002: Stable Prisma 7.10 Toolchain & Managed PostgreSQL Architecture
 
-**Status:** Implemented and verified across monorepo and Docker backend.
+**Status:** Canonical baseline across monorepo, Docker backend, and CI.
 
-Suchi upgraded its database architecture to **Prisma 8** (`prisma@8.0.0-rc.13`, `@prisma/orm-postgres@8.0.0-rc.9`):
+For the Suchi MVP and staging launch, Suchi standardizes on a **single stable Prisma 7.10 toolchain** (`prisma@7.10.0`, `@prisma/client@7.10.0`, `@prisma/adapter-pg@^7.10.0`):
 
-1. **Contract-First Architecture**: Authoritative schema contract defined in `packages/database/prisma/contract.prisma` using `prisma.config.ts`. Compiles into typed contracts (`prisma/contract.json`, `prisma/contract.d.ts`).
-2. **Schema Verification & Signing**: `prisma db sign` records schema verification markers; `prisma db verify` validates schema integrity and eliminates drift.
-3. **Better Auth Option B Compatibility**: Authentication tables (`AuthUser`, `AuthSession`, `AuthAccount`, `AuthVerification`) interface with `@better-auth/prisma-adapter` and `@prisma/client` runtime generated via `prisma7 generate --config prisma7.config.ts`.
-4. **Relational Constraints**: Migration `20260911180000_prisma8_contract_constraints` elevates unique indexes on 1:1 relation foreign keys (`UserProfile.authUserId`, `AiUsageRecord.runId`, `OrganizationSettings.organizationId`, `Subscription.organizationId`, `Subscription.externalId`) into official PostgreSQL `UNIQUE` constraints using existing indexes.
+1. **Unified Toolchain**: Eliminates release-candidate tooling and dual-toolchain complexity. Schema validation, generation, and migrations all run via standard `prisma` commands configured through `packages/database/prisma.config.ts`.
+2. **Better Auth Option B Compatibility**: Better Auth's Prisma adapter (`@better-auth/prisma-adapter`) seamlessly consumes `@prisma/client@7.10.0` without custom query-layer shims. Authentication tables (`AuthUser`, `AuthSession`, `AuthAccount`, `AuthVerification`) bridge to `UserProfile.authUserId`.
+3. **Relational Constraints**: Preserves migration `20260911180000_prisma8_contract_constraints`, ensuring that singular foreign key relationships (`UserProfile.authUserId`, `AiUsageRecord.runId`, `OrganizationSettings.organizationId`, `Subscription.organizationId`, `Subscription.externalId`) possess formal PostgreSQL `UNIQUE` constraints via `UNIQUE USING INDEX`.
+4. **Managed Staging Compatibility**: Any managed PostgreSQL service (**Prisma Postgres**, **Neon**, **Railway PostgreSQL**, Supabase, or AWS RDS) can be used directly via standard connection strings (`DATABASE_URL` and `DIRECT_DATABASE_URL`) without requiring Prisma repository auto-deploy or cloud git integration. Migrations deploy deterministically via `npm run db:migrate:deploy`.
 
 ## Target entities
 
