@@ -8,6 +8,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "build": "npm run db:generate",
     "start": "node saas/server.js",
     "dev": "node --watch saas/server.js",
     "start:legacy": "node server.js",
