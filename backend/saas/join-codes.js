@@ -50,9 +50,17 @@ export async function createJoinCode(db, context, input = {}) {
 }
 
 export async function rotateJoinCode(db, context, input = {}) {
-  await requireJoinCodeManager(db, context);
-  await db.organizationJoinCode.updateMany({ where: { organizationId: context.organizationId, revokedAt: null }, data: { revokedAt: new Date() } });
-  return createJoinCode(db, context, input);
+  const parsed = parseSchema(createJoinCodeInput, input, 'Join code options are invalid.');
+  const authorization = await requireJoinCodeManager(db, context);
+  const code = generateJoinCode();
+  const persist = async (tx) => {
+    await tx.organizationJoinCode.updateMany({ where: { organizationId: context.organizationId, revokedAt: null }, data: { revokedAt: new Date() } });
+    const saved = await tx.organizationJoinCode.create({
+      data: { organizationId: context.organizationId, codeHash: hashJoinCode(code), createdByMembershipId: authorization.membership.id, expiresAt: parsed.expiresAt, maxUses: parsed.maxUses },
+    });
+    return { code, joinCode: { id: saved.id, organizationId: saved.organizationId, createdAt: saved.createdAt, expiresAt: saved.expiresAt, maxUses: saved.maxUses } };
+  };
+  return db.$transaction ? db.$transaction(persist) : persist(db);
 }
 
 export async function revokeJoinCode(db, context, id) {
@@ -66,32 +74,36 @@ export async function joinOrganizationByCode(db, context, input) {
   if (!context?.userId) throw new AppError('Authentication required.', 401, 'UNAUTHENTICATED');
   const { code } = parseSchema(joinCodeInput, input, 'Enter a valid workspace code.');
   const codeHash = hashJoinCode(code);
-  const joinCode = await db.organizationJoinCode.findUnique({ where: { codeHash }, include: { organization: true } });
-  if (!joinCode || joinCode.revokedAt || (joinCode.expiresAt && joinCode.expiresAt <= new Date()) || (joinCode.maxUses != null && joinCode.useCount >= joinCode.maxUses)) {
-    throw new AppError('That workspace code is invalid or expired.', 400, 'INVALID_JOIN_CODE');
+  let joinFailure;
+  try {
+    const work = async (tx) => {
+      const now = new Date();
+      const joinCode = await tx.organizationJoinCode.findFirst({
+        where: { codeHash, revokedAt: null, OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
+        include: { organization: true },
+      });
+      if (!joinCode || (joinCode.maxUses != null && joinCode.useCount >= joinCode.maxUses)) throw new AppError('That workspace code is invalid or expired.', 400, 'INVALID_JOIN_CODE');
+      const existing = await tx.organizationMembership.findUnique({ where: { organizationId_userId: { organizationId: joinCode.organizationId, userId: context.userId } } });
+      if (existing) return publicOrganization(joinCode.organization, existing);
+      const claimed = await tx.organizationJoinCode.updateMany({
+        where: { id: joinCode.id, revokedAt: null, AND: [{ OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] }, { OR: [{ maxUses: null }, { useCount: { lt: joinCode.maxUses ?? 2147483647 } }] }] },
+        data: { useCount: { increment: 1 } },
+      });
+      if (!claimed.count) throw new AppError('That workspace code is invalid or expired.', 400, 'INVALID_JOIN_CODE');
+      const membership = await tx.organizationMembership.create({ data: { organizationId: joinCode.organizationId, userId: context.userId, role: 'member' } });
+      return publicOrganization(joinCode.organization, membership);
+    };
+    return await (db.$transaction ? db.$transaction(work) : work(db));
+  } catch (error) {
+    joinFailure = error;
   }
-  const existing = await db.organizationMembership.findUnique({ where: { organizationId_userId: { organizationId: joinCode.organizationId, userId: context.userId } } });
-  if (existing) return publicOrganization(joinCode.organization, existing);
-
-  const work = async (tx) => {
-    let membership;
-    try {
-      membership = await tx.organizationMembership.create({ data: { organizationId: joinCode.organizationId, userId: context.userId, role: 'member' } });
-    } catch (error) {
-      if (error?.code !== 'P2002') throw error;
-      membership = await tx.organizationMembership.findUnique({ where: { organizationId_userId: { organizationId: joinCode.organizationId, userId: context.userId } } });
-    }
-    if (!membership) throw new AppError('Unable to join this workspace.', 409, 'JOIN_CONFLICT');
-    if (membership.role !== 'member' && membership.userId === context.userId) return publicOrganization(joinCode.organization, membership);
-    if (joinCode.maxUses != null) {
-      const consumed = await tx.organizationJoinCode.updateMany({ where: { id: joinCode.id, revokedAt: null, OR: [{ maxUses: null }, { useCount: { lt: joinCode.maxUses } }] }, data: { useCount: { increment: 1 } } });
-      if (!consumed.count) throw new AppError('That workspace code is no longer available.', 400, 'INVALID_JOIN_CODE');
-    } else {
-      await tx.organizationJoinCode.update({ where: { id: joinCode.id }, data: { useCount: { increment: 1 } } });
-    }
-    return publicOrganization(joinCode.organization, membership);
-  };
-  return db.$transaction ? db.$transaction(work) : work(db);
+  if (joinFailure?.code !== 'P2002' && joinFailure?.code !== 'INVALID_JOIN_CODE') throw joinFailure;
+  const joinedCode = await db.organizationJoinCode.findUnique({ where: { codeHash }, include: { organization: true } });
+  if (joinedCode) {
+    const existing = await db.organizationMembership.findUnique({ where: { organizationId_userId: { organizationId: joinedCode.organizationId, userId: context.userId } } });
+    if (existing) return publicOrganization(joinedCode.organization, existing);
+  }
+  throw new AppError('That workspace code is invalid or expired.', 400, 'INVALID_JOIN_CODE');
 }
 
 export { joinCodeInput, createJoinCodeInput };

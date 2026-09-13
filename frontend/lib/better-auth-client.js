@@ -67,6 +67,7 @@ function normalizeOrganization(value) {
     name: organization.name || organization.slug || organization.id,
     slug: organization.slug || organization.id,
     logo: organization.logo || null,
+    role: value.role || organization.role || null,
   };
 }
 
