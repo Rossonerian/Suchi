@@ -84,7 +84,7 @@ export function createSaasApp({ auth = getAuth(), database = getSaasDatabase(), 
 
   // Feature capabilities
   app.get('/api/capabilities', (req, res) => res.json({
-    googleLogin: config.googleConfigured,
+    googleLogin: config.googleConfigured === true,
     emailPassword: env.AUTH_EMAIL_PASSWORD_ENABLED !== '0',
     calendar: env.GOOGLE_CALENDAR_ENABLED === '1',
     ai: env.AI_ENABLED === '1',

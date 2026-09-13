@@ -66,6 +66,11 @@ export function loadConfig(env = process.env) {
 
   // Optional integrations validation
   const googleCalendarEnabled = env.GOOGLE_CALENDAR_ENABLED === '1';
+  const googleClientId = env.GOOGLE_CLIENT_ID || null;
+  const googleClientSecret = env.GOOGLE_CLIENT_SECRET || null;
+  if (Boolean(googleClientId) !== Boolean(googleClientSecret)) {
+    throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured together.');
+  }
   const integrationsEnabled = googleCalendarEnabled || env.INTEGRATIONS_ENABLED === '1';
   const integrationEncryptionKey = env.INTEGRATION_ENCRYPTION_KEY;
   const integrationStateSecret = env.INTEGRATION_STATE_SECRET;
@@ -96,8 +101,8 @@ export function loadConfig(env = process.env) {
     pgConnectTimeoutMs: Number(env.PGCONNECT_TIMEOUT_MS || 5000),
     pgIdleTimeoutMs: Number(env.PGIDLE_TIMEOUT_MS || 30000),
     // Integrations
-    googleClientId: env.GOOGLE_CLIENT_ID || null,
-    googleClientSecret: env.GOOGLE_CLIENT_SECRET || null,
+    googleClientId,
+    googleClientSecret,
     googleCalendarEnabled,
     stripeSecretKey: env.STRIPE_SECRET_KEY || null,
     stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || null,

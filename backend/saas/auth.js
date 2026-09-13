@@ -24,11 +24,18 @@ export function authConfiguration(env = process.env) {
   if (trustedOrigins.some((origin) => origin.includes('*'))) {
     throw new Error('Trusted origins must be explicit.');
   }
+  const hasGoogleClientId = Boolean(env.GOOGLE_CLIENT_ID);
+  const hasGoogleClientSecret = Boolean(env.GOOGLE_CLIENT_SECRET);
+  if (hasGoogleClientId !== hasGoogleClientSecret) {
+    throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured together.');
+  }
+  const googleConfigured = hasGoogleClientId && hasGoogleClientSecret;
   return {
     appName: 'Suchi',
     baseURL: baseURL.origin,
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: [...new Set([...trustedOrigins, 'suchi://', 'nidar://'])],
+    googleConfigured,
   };
 }
 
@@ -60,6 +67,14 @@ export function createAuth(db, env = process.env) {
       enabled: env.AUTH_EMAIL_PASSWORD_ENABLED !== '0',
       minPasswordLength: 8,
     },
+    ...(config.googleConfigured ? {
+      socialProviders: {
+        google: {
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+        },
+      },
+    } : {}),
     advanced: {
       cookiePrefix: 'suchi',
       useSecureCookies: env.NODE_ENV === 'production',

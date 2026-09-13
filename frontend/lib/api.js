@@ -77,6 +77,10 @@ export const api = {
 export const saasApi = {
   listOrganizations: (accessToken) => request('/v1/organizations', {}, accessToken),
   createOrganization: (payload, accessToken) => request('/v1/organizations', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
+  joinOrganizationByCode: (code, accessToken) => request('/v1/organizations/join', { method: 'POST', body: JSON.stringify({ code }) }, accessToken),
+  createJoinCode: (payload = {}, accessToken) => request('/v1/organizations/join-codes', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
+  rotateJoinCode: (payload = {}, accessToken) => request('/v1/organizations/join-codes/rotate', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
+  revokeJoinCode: (id, accessToken) => request(`/v1/organizations/join-codes/${encodeURIComponent(id)}`, { method: 'DELETE' }, accessToken),
   listMembers: (accessToken) => request('/v1/organizations/members', {}, accessToken),
   inviteMember: (payload, accessToken) => request('/v1/organizations/members/invitations', { method: 'POST', body: JSON.stringify(payload) }, accessToken),
   listProjects: (accessToken) => request('/v1/projects', {}, accessToken),

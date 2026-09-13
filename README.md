@@ -135,4 +135,6 @@ npm --prefix apps/mobile run lint
 
 - **Secrets Handling**: Real API keys, database credentials, and auth secrets must **never** be checked into version control. Environment variables are loaded strictly at process boot with fail-fast validation in `backend/saas/config.js`.
 - **Identity Isolation (Option B)**: Better Auth owns only credential authentication (`AuthUser`, `AuthSession`, `AuthAccount`, `AuthVerification`). The Suchi domain remains authoritative for organizations, memberships, permissions, projects, tasks, and meetings.
+- **Web onboarding**: After email/password or configured Google authentication, users open their sole workspace, select one of several workspaces, or join/create a workspace. Workspace owners and admins can issue one-time-visible workspace join codes; only the SHA-256 hash is stored and codes never grant elevated roles.
+- **Google sign-in**: Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` together as backend/Railway variables. The frontend receives only the `/api/capabilities` boolean; it never receives the client secret. Without both values, Google sign-in is unavailable.
 - **Deep Linking Protocol**: Supports `suchi://` natively with backward-compatible fallback for `nidar://`.

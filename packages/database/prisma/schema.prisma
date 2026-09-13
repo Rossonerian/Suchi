@@ -86,6 +86,7 @@ model Organization {
   externalMappings ExternalResourceMapping[]
   usageCounters    UsageCounter[]
   subscription     Subscription?
+  joinCodes        OrganizationJoinCode[]
 }
 
 model OrganizationSettings {
@@ -108,9 +109,26 @@ model OrganizationMembership {
   projectMembers   ProjectMember[]
   assignedTasks    TaskAssignee[]
   meetingAttendees MeetingAttendee[]
+  createdJoinCodes OrganizationJoinCode[] @relation("JoinCodeCreator")
 
   @@unique([organizationId, userId])
   @@index([organizationId, role])
+}
+
+model OrganizationJoinCode {
+  id                    String                   @id @default(cuid())
+  organizationId        String
+  codeHash              String                   @unique
+  createdByMembershipId String?
+  createdAt             DateTime                 @default(now())
+  expiresAt             DateTime?
+  revokedAt             DateTime?
+  maxUses               Int?
+  useCount              Int                    @default(0)
+  organization          Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdByMembership   OrganizationMembership? @relation("JoinCodeCreator", fields: [createdByMembershipId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, revokedAt, expiresAt])
 }
 
 model Team {

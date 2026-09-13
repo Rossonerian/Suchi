@@ -13,6 +13,7 @@ const permissionRoles = {
   'task:delete': new Set(['owner', 'admin', 'project:owner', 'project:manager']),
   'task:assign': new Set(['owner', 'admin', 'member', 'project:owner', 'project:manager', 'project:member']),
   'meeting:create': new Set(['owner', 'admin', 'member']),
+  'organization:manage_join_codes': new Set(['owner', 'admin']),
 };
 
 async function authorizationContext(db, context, projectId) {

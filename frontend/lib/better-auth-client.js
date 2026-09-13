@@ -180,3 +180,7 @@ export async function signInWithGoogle() {
   if (typeof window !== 'undefined' && result?.url) window.location.assign(result.url);
   return result;
 }
+
+export async function getCapabilities() {
+  return apiRequest('/capabilities');
+}
