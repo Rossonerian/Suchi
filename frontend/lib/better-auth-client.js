@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+import { getApiBaseUrl } from './api-base.mjs';
 
 export class BetterAuthError extends Error {
   constructor(message, status = 0, code) {
@@ -12,9 +11,10 @@ export class BetterAuthError extends Error {
 }
 
 export async function authRequest(path, options = {}) {
+  const baseUrl = getApiBaseUrl();
   let response;
   try {
-    response = await fetch(`${API_URL}/api/auth${path}`, {
+    response = await fetch(`${baseUrl}/api/auth${path}`, {
       ...options,
       headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
       credentials: 'include',
@@ -35,9 +35,10 @@ export async function authRequest(path, options = {}) {
 }
 
 export async function apiRequest(path, options = {}) {
+  const baseUrl = getApiBaseUrl();
   let response;
   try {
-    response = await fetch(`${API_URL}/api${path}`, {
+    response = await fetch(`${baseUrl}/api${path}`, {
       ...options,
       headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
       credentials: 'include',

@@ -1,6 +1,6 @@
 // Single responsibility: one fetch wrapper the whole app calls through,
 // so the API base URL and error handling live in exactly one place.
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { getApiBaseUrl } from './api-base.mjs';
 
 export class ApiError extends Error {
   constructor(message, status, code) {
@@ -15,7 +15,8 @@ async function request(path, options = {}, accessToken = '') {
   let res;
   try {
     const { headers = {}, ...requestOptions } = options;
-    res = await fetch(`${API_URL}/api${path}`, {
+    const baseUrl = getApiBaseUrl();
+    res = await fetch(`${baseUrl}/api${path}`, {
       ...requestOptions,
       headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}), ...headers },
       credentials: 'include',
