@@ -1,12 +1,60 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
 import { defineConfig } from 'prisma/config';
 
-// Prisma 7 moved connection URLs out of schema.prisma.
-// DIRECT_DATABASE_URL is prioritized for migrations/DDL when connection pooling (pgbouncer)
-// is used on DATABASE_URL in managed PostgreSQL environments (Neon, Supabase, RDS, Railway).
+// Load environment variables following repository conventions.
+// In local development, backend/.env is standard.
+// Candidate locations are checked in order without overwriting existing environment variables.
+export function loadPrismaDotenv(currentDir = path.dirname(fileURLToPath(import.meta.url))): void {
+  const candidatePaths = [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(currentDir, '.env'),
+    path.resolve(currentDir, '../../.env'),
+    path.resolve(currentDir, '../../backend/.env'),
+  ];
+
+  for (const envPath of candidatePaths) {
+    if (fs.existsSync(envPath)) {
+      dotenv.config({ path: envPath });
+    }
+  }
+}
+
+// Staging-safe URL resolution:
+// 1. Prefers DIRECT_DATABASE_URL (for unpooled DDL/migrations) over DATABASE_URL.
+// 2. Otherwise falls back to DATABASE_URL.
+// 3. Fails closed by returning undefined if neither is present.
+// NEVER falls back to localhost or a default development database.
+export function resolveDatasourceUrl(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const direct = env.DIRECT_DATABASE_URL?.trim();
+  if (direct) {
+    return direct;
+  }
+  const standard = env.DATABASE_URL?.trim();
+  if (standard) {
+    return standard;
+  }
+  return undefined;
+}
+
+export function getRequiredDatasourceUrl(env: NodeJS.ProcessEnv = process.env): string {
+  const url = resolveDatasourceUrl(env);
+  if (!url) {
+    throw new Error(
+      'Database connection URL is required for Prisma migrations and status. Neither DIRECT_DATABASE_URL nor DATABASE_URL was found in environment or .env files.'
+    );
+  }
+  return url;
+}
+
+loadPrismaDotenv();
+
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: { path: 'prisma/migrations' },
   datasource: {
-    url: process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL ?? 'postgresql://nidar:57a11c3b61e0ba86d75be63b7b7733e0d0653e6c269fb37e68e4b83c47a67e2d@localhost:55432/nidar_dev?schema=public',
+    url: resolveDatasourceUrl(),
   },
 });
