@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { activateOrganization, resolveActiveOrganization } from './workspace-selection.mjs';
+import { activateOrganization, resolveActiveOrganization, workspaceDisplayName } from './workspace-selection.mjs';
 
 const organizations = [
   { id: 'org-a', slug: 'acme', name: 'Acme' },
@@ -29,4 +29,10 @@ test('activation errors propagate and do not refresh into a fake selection', asy
     /activation failed/,
   );
   assert.equal(refreshed, false);
+});
+
+test('the workspace shell does not display a route as selected before activation matches it', () => {
+  assert.equal(workspaceDisplayName(null, 'acme'), 'Choose workspace');
+  assert.equal(workspaceDisplayName({ id: 'org-b', slug: 'beta', name: 'Beta' }, 'acme'), 'Choose workspace');
+  assert.equal(workspaceDisplayName({ id: 'org-a', slug: 'acme', name: 'Acme' }, 'acme'), 'Acme');
 });

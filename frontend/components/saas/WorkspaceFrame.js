@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
 import { ApiError, saasApi } from '../../lib/api';
 import { workspaceContextState } from '../../lib/workspace-context.mjs';
+import { workspaceDisplayName } from '../../lib/workspace-selection.mjs';
 import { SuchiLogo } from '../brand/SuchiLogo';
 
 const saasAuthEnabled = true;
@@ -50,6 +51,8 @@ const navIcons = {
 };
 
 export function WorkspaceFrame({ orgSlug, children, active }) {
+  const { organization } = useOrganization();
+  const workspaceName = workspaceDisplayName(organization, orgSlug);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const wasOpen = useRef(false);
@@ -64,7 +67,7 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
 
   return <div className={`workspace-shell${sidebarCollapsed ? ' is-collapsed' : ''}`}>
     <aside className="workspace-sidebar" aria-label="Workspace navigation">
-      <WorkspaceBrand orgSlug={orgSlug} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((value) => !value)} />
+      <WorkspaceBrand workspaceName={workspaceName} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((value) => !value)} />
       <WorkspaceNavigation orgSlug={orgSlug} active={current} />
       <div className="workspace-sidebar-footer"><span className="muted">Team workspace</span></div>
     </aside>
@@ -72,7 +75,7 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
       <header className="workspace-topbar banani-glass-surface">
         <div className="workspace-topbar-context">
           <Button id="workspace-navigation-trigger" type="button" className="workspace-mobile-trigger" variant="outline" size="icon" aria-label="Open workspace navigation" onClick={() => setMobileOpen(true)}><Menu aria-hidden="true" /></Button>
-          <div className="workspace-breadcrumb"><p className="eyebrow">WORKSPACE</p><h1>{orgSlug || 'Workspace'}</h1></div>
+          <div className="workspace-breadcrumb"><p className="eyebrow">WORKSPACE</p><h1>{workspaceName}</h1></div>
         </div>
         {saasAuthEnabled && <div className="workspace-topbar-actions"><WorkspaceSearch orgSlug={orgSlug} /><NotificationCenter orgSlug={orgSlug} /><WorkspaceSwitcher /></div>}
       </header>
@@ -80,7 +83,7 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
     </div>
     <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
       <SheetContent side="left" className="workspace-mobile-sheet">
-        <SheetHeader><SheetTitle>{orgSlug || 'Workspace'}</SheetTitle><SheetDescription>Workspace navigation</SheetDescription></SheetHeader>
+        <SheetHeader><SheetTitle>{workspaceName}</SheetTitle><SheetDescription>Workspace navigation</SheetDescription></SheetHeader>
         <WorkspaceNavigation orgSlug={orgSlug} active={current} onNavigate={closeMobile} />
         {saasAuthEnabled && <div className="workspace-mobile-switcher"><WorkspaceSwitcher /></div>}
       </SheetContent>
@@ -125,9 +128,9 @@ function WorkspaceGate({ orgSlug, children }) {
   return children;
 }
 
-function WorkspaceBrand({ orgSlug, collapsed, onToggle }) {
+function WorkspaceBrand({ workspaceName, collapsed, onToggle }) {
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
-  return <div className="workspace-brand"><SuchiLogo variant="symbol" className="workspace-logo" decorative /><div className="workspace-brand-copy"><p className="eyebrow">SUCHI WORKSPACE</p><strong>{orgSlug || 'Workspace'}</strong></div><button type="button" className="workspace-brand-collapse" onClick={onToggle} aria-label={collapsed ? 'Expand workspace navigation' : 'Collapse workspace navigation'} title={collapsed ? 'Expand navigation' : 'Collapse navigation'}><ToggleIcon aria-hidden="true" /></button><span className="workspace-brand-chevron" aria-hidden="true"><ChevronDown /></span></div>;
+  return <div className="workspace-brand"><SuchiLogo variant="symbol" className="workspace-logo" decorative /><div className="workspace-brand-copy"><p className="eyebrow">SUCHI WORKSPACE</p><strong>{workspaceName}</strong></div><button type="button" className="workspace-brand-collapse" onClick={onToggle} aria-label={collapsed ? 'Expand workspace navigation' : 'Collapse workspace navigation'} title={collapsed ? 'Expand navigation' : 'Collapse navigation'}><ToggleIcon aria-hidden="true" /></button><span className="workspace-brand-chevron" aria-hidden="true"><ChevronDown /></span></div>;
 }
 
 function WorkspaceSwitcher() {
