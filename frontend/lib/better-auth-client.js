@@ -90,30 +90,69 @@ function sessionUser(user) {
 const AuthContext = createContext(null);
 
 export function BetterAuthProvider({ children }) {
-  const [state, setState] = useState({ isLoaded: false, session: null, organizations: [], error: '' });
+  const [state, setState] = useState({
+    isLoaded: false,
+    session: null,
+    organizations: [],
+    error: '',
+    organizationError: '',
+    workspaceActivation: { status: 'idle', targetId: null, error: '' },
+  });
 
   const refresh = useCallback(async () => {
+    let sessionPayload = null;
     try {
-      const sessionPayload = await authRequest('/get-session');
+      sessionPayload = await authRequest('/get-session');
       let organizationsPayload = { organizations: [] };
       if (sessionPayload?.session) {
-        organizationsPayload = await apiRequest('/v1/organizations').catch((error) => {
-          if (error.status === 401) return { organizations: [] };
-          return { organizations: [] };
-        });
+        try {
+          organizationsPayload = await apiRequest('/v1/organizations');
+        } catch (error) {
+          throw new BetterAuthError(
+            error.status === 401 ? 'Your workspace session could not be verified.' : 'Your workspaces could not be loaded. Try again.',
+            error.status,
+            error.code || 'ORGANIZATIONS_UNAVAILABLE',
+          );
+        }
       }
-      setState({
+      const session = sessionPayload?.session ? {
+        ...sessionPayload,
+        session: {
+          ...sessionPayload.session,
+        },
+        user: sessionUser(sessionPayload.user),
+      } : null;
+      const organizations = normalizeOrganizations(organizationsPayload);
+      setState((current) => ({
+        ...current,
         isLoaded: true,
-        session: sessionPayload?.session ? { ...sessionPayload, user: sessionUser(sessionPayload.user) } : null,
-        organizations: normalizeOrganizations(organizationsPayload),
+        session,
+        organizations,
         error: '',
-      });
+        organizationError: '',
+      }));
+      return { session, organizations };
     } catch (error) {
-      setState({ isLoaded: true, session: null, organizations: [], error: error.message || 'Authentication service is unavailable.' });
+      setState((current) => ({
+        ...current,
+        isLoaded: true,
+        error: error.message || 'Authentication service is unavailable.',
+        session: sessionPayload?.session ? {
+          ...sessionPayload,
+          user: sessionUser(sessionPayload.user),
+        } : current.session,
+        organizationError: sessionPayload?.session || current.session ? error.message || 'Your workspaces could not be loaded. Try again.' : '',
+      }));
+      throw error;
     }
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh().catch(() => {
+      // refresh() records authentication and organization failures in context;
+      // this boundary prevents an unhandled promise rejection during bootstrap.
+    });
+  }, [refresh]);
 
   const signOut = useCallback(async () => {
     await authRequest('/sign-out', { method: 'POST', body: JSON.stringify({}) });
@@ -121,7 +160,16 @@ export function BetterAuthProvider({ children }) {
   }, []);
 
   const setActive = useCallback(async ({ organization }) => {
-    await activateOrganization(apiRequest, refresh, organization);
+    if (!organization) return null;
+    setState((current) => ({ ...current, workspaceActivation: { status: 'pending', targetId: organization, error: '' } }));
+    try {
+      const result = await activateOrganization(apiRequest, refresh, organization);
+      setState((current) => ({ ...current, workspaceActivation: { status: 'active', targetId: result?.activeOrganizationId || organization, error: '' } }));
+      return result;
+    } catch (error) {
+      setState((current) => ({ ...current, workspaceActivation: { status: 'error', targetId: organization, error: error.message || 'This workspace could not be activated. Try again.' } }));
+      throw error;
+    }
   }, [refresh]);
 
   const value = useMemo(() => ({
@@ -134,6 +182,8 @@ export function BetterAuthProvider({ children }) {
     signOut,
     setActive,
     refresh,
+    organizationError: state.organizationError,
+    workspaceActivation: state.workspaceActivation,
   }), [refresh, setActive, signOut, state]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

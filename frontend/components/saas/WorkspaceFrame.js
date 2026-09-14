@@ -8,8 +8,8 @@ import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
 import { ApiError, saasApi } from '../../lib/api';
-import { workspaceContextState } from '../../lib/workspace-context.mjs';
-import { workspaceDisplayName } from '../../lib/workspace-selection.mjs';
+import { findWorkspaceMembership } from '../../lib/workspace-context.mjs';
+import { workspaceActivationState, workspaceDisplayName } from '../../lib/workspace-selection.mjs';
 import { SuchiLogo } from '../brand/SuchiLogo';
 
 const saasAuthEnabled = true;
@@ -99,32 +99,31 @@ export function WorkspaceFrame({ orgSlug, children, active }) {
  */
 function WorkspaceGate({ orgSlug, children }) {
   const auth = useAuth();
-  const { organization } = useOrganization();
-  const { isLoaded, userMemberships, setActive } = useOrganizationList({ userMemberships: { pageSize: 50 } });
-  const state = workspaceContextState({
-    isLoaded,
-    organization,
-    memberships: userMemberships?.data || [],
-    orgSlug,
-  });
-  const [switchError, setSwitchError] = useState('');
+  const gateState = useWorkspaceState(orgSlug);
+  const targetId = gateState.membership?.organization.id || null;
+  const activation = auth.workspaceActivation;
+  const setActive = auth.setActive;
 
   useEffect(() => {
-    setSwitchError('');
-    if (!state.membership || organization?.id === state.membership.organization.id) return undefined;
+    if (gateState.phase !== 'SWITCHING_WORKSPACE' || !targetId) return undefined;
+    if (activation?.status === 'pending' && activation.targetId === targetId) return undefined;
+    // WorkspaceSwitcher owns navigation after a successful activation. Do not
+    // start a second activation while that route transition is in flight.
+    if (activation?.status === 'active' && activation.targetId !== targetId) return undefined;
 
-    let active = true;
-    Promise.resolve(setActive?.({ organization: state.membership.organization.id }))
-      .catch(() => {
-        if (active) setSwitchError('This workspace could not be activated. Try switching organizations again.');
-      });
-    return () => { active = false; };
-  }, [organization, setActive, state.membership]);
+    // setActive records failures in the shared provider state before rejecting;
+    // WorkspaceGate only initiates the transition and renders that state.
+    setActive?.({ organization: targetId }).catch(() => {
+      // setActive records the failure in the shared provider state before
+      // rejecting; the gate renders that state on the next update.
+    });
+    return undefined;
+  }, [activation?.status, activation?.targetId, gateState.phase, setActive, targetId]);
 
-  if (!auth.isLoaded) return <p className="muted" role="status" aria-busy="true">Loading your session…</p>;
-  if (!auth.isSignedIn) return <p className="muted" role="alert">Sign in to open this workspace.</p>;
-  if (switchError) return <p className="muted" role="alert">{switchError}</p>;
-  if (!state.ready) return <p className="muted" role="status" aria-busy="true">{state.status}</p>;
+  if (gateState.phase === 'LOADING_ORGANIZATIONS') return <p className="muted" role="status" aria-busy="true">{gateState.status}</p>;
+  if (gateState.phase === 'UNAUTHENTICATED') return <p className="muted" role="alert">{gateState.status}</p>;
+  if (gateState.phase === 'ERROR') return <p className="muted" role="alert">{gateState.status}</p>;
+  if (!gateState.ready) return <p className="muted" role="status" aria-busy="true">{gateState.status}</p>;
   return children;
 }
 
@@ -145,8 +144,8 @@ function WorkspaceSwitcher() {
     if (!target || target.id === organization?.id || switching) return;
     setSwitching(true);
     try {
-      await router.push(`/app/${encodeURIComponent(target.slug || target.id)}`);
       await setActive?.({ organization: target.id });
+      await router.push(`/app/${encodeURIComponent(target.slug || target.id)}`);
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : 'Unable to switch workspace.');
     } finally {
@@ -240,20 +239,22 @@ export function FeatureDisabled({ orgSlug }) {
 
 export function useClerkPageState(auth, orgSlug) {
   const workspace = useWorkspaceState(orgSlug);
-  if (!auth.isLoaded) return { status: 'Loading your session…' };
-  if (!auth.isSignedIn) return { status: 'Sign in to open this workspace.' };
-  if (orgSlug && !workspace.ready) return { status: workspace.status };
-  return { status: '', workspace };
+  return { status: workspace.ready ? '' : workspace.status, phase: workspace.phase, workspace };
 }
 
 export function useWorkspaceState(orgSlug) {
+  const auth = useAuth();
   const { organization } = useOrganization();
   const { isLoaded, userMemberships } = useOrganizationList({ userMemberships: { pageSize: 50 } });
-  if (!orgSlug) return { ready: true, status: '' };
-  return workspaceContextState({
-    isLoaded,
+  const memberships = userMemberships?.data || [];
+  if (!orgSlug) return { phase: 'ACTIVE', ready: true, status: '', organization, membership: null };
+  const membership = findWorkspaceMembership(memberships, orgSlug);
+  return workspaceActivationState({
+    isLoaded: auth.isLoaded && isLoaded,
+    isSignedIn: auth.isSignedIn,
     organization,
-    memberships: userMemberships?.data || [],
-    orgSlug,
+    membership,
+    activation: auth.workspaceActivation,
+    organizationError: auth.organizationError,
   });
 }
