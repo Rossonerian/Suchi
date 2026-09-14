@@ -10,7 +10,8 @@ export default function Document() {
           rel="stylesheet"
         />
         <meta name="description" content="Suchi - Workspace platform for projects, tasks, and teams" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/icons/suchi-symbol-32.png" type="image/png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/suchi-symbol-180.png" />
       </Head>
       <body>
         <Main />
