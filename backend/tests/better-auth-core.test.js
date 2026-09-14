@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { parseSessionOutput } from 'better-auth/db';
 import { authConfiguration, createAuth } from '../saas/auth.js';
+import { persistActiveOrganization } from '../routes/organizations.js';
 import { provisionApplicationUser } from '../saas/identity-bridge.js';
 import { resolveSessionContext } from '../saas/auth-context.js';
 
@@ -31,6 +33,15 @@ test('Better Auth configuration enforces invariants', () => {
   assert.equal(config.googleConfigured, false);
   assert.ok(config.trustedOrigins.includes('http://localhost:3000'));
   assert.ok(config.trustedOrigins.includes('nidar://'));
+  const auth = createAuth({}, {
+    BETTER_AUTH_SECRET: 'a'.repeat(32),
+    BETTER_AUTH_URL: 'http://localhost:5000',
+  });
+  assert.deepEqual(auth.options.session.additionalFields.activeOrganizationId, {
+    type: 'string',
+    required: false,
+    input: false,
+  });
   const googleConfig = authConfiguration({
     BETTER_AUTH_SECRET: 'a'.repeat(32), BETTER_AUTH_URL: 'http://localhost:5000',
     GOOGLE_CLIENT_ID: 'client-id', GOOGLE_CLIENT_SECRET: 'client-secret',
@@ -133,6 +144,40 @@ test('identity bridge provisions and links application UserProfile idempotently'
     () => provisionApplicationUser(mockDb, attackerAuthUser),
     { code: 'ACCOUNT_CONFLICT', status: 409 },
   );
+});
+
+test('active organization persistence is returned by subsequent session reads and supports switching', async () => {
+  const sessions = new Map([
+    ['session-a', { id: 'session-a', userId: 'auth-user-a', activeOrganizationId: null }],
+  ]);
+  const db = {
+    authSession: {
+      update: async ({ where, data }) => {
+        const current = sessions.get(where.id);
+        if (!current) throw new Error('session not found');
+        const updated = { ...current, ...data };
+        sessions.set(where.id, updated);
+        return updated;
+      },
+      findUnique: async ({ where }) => sessions.get(where.id) || null,
+    },
+  };
+
+  await persistActiveOrganization(db, 'session-a', 'org-a');
+  const sessionA = await db.authSession.findUnique({ where: { id: 'session-a' } });
+  assert.equal(sessionA.activeOrganizationId, 'org-a');
+  assert.equal(parseSessionOutput(createAuth({}, {
+    BETTER_AUTH_SECRET: 'a'.repeat(32),
+    BETTER_AUTH_URL: 'http://localhost:5000',
+  }).options, sessionA).activeOrganizationId, 'org-a');
+
+  await persistActiveOrganization(db, 'session-a', 'org-b');
+  const sessionB = await db.authSession.findUnique({ where: { id: 'session-a' } });
+  assert.equal(sessionB.activeOrganizationId, 'org-b');
+  assert.equal(parseSessionOutput(createAuth({}, {
+    BETTER_AUTH_SECRET: 'a'.repeat(32),
+    BETTER_AUTH_URL: 'http://localhost:5000',
+  }).options, sessionB).activeOrganizationId, 'org-b');
 });
 
 test('session and tenant context resolution enforces isolation, switching, and domain contracts', async () => {

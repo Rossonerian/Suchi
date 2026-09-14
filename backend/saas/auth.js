@@ -55,6 +55,17 @@ export function createAuth(db, env = process.env) {
       expiresIn: 60 * 60 * 24 * 7,
       updateAge: 60 * 60 * 24,
       cookieCache: { enabled: false },
+      // Suchi stores the active application organization on the Better Auth
+      // session row. Declaring it here makes the Prisma field part of
+      // Better Auth's session read/serialization contract without enabling
+      // Better Auth's Organization plugin.
+      additionalFields: {
+        activeOrganizationId: {
+          type: 'string',
+          required: false,
+          input: false,
+        },
+      },
     },
     account: {
       modelName: 'authAccount',

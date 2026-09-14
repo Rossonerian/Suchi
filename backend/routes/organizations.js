@@ -11,6 +11,14 @@ import { createJoinCode, joinOrganizationByCode, revokeJoinCode, rotateJoinCode 
 const router = express.Router();
 router.use(requireAuthenticatedUser);
 
+export async function persistActiveOrganization(db, sessionId, organizationId) {
+  if (!sessionId) return null;
+  return db.authSession.update({
+    where: { id: sessionId },
+    data: { activeOrganizationId: organizationId },
+  });
+}
+
 router.get('/', async (req, res, next) => {
   try {
     const organizations = await listOrganizations(getSaasDatabase(), req.userContext);
@@ -37,7 +45,7 @@ router.post('/join', async (req, res, next) => {
   try {
     const result = await joinOrganizationByCode(getSaasDatabase(), req.userContext, req.body);
     if (req.authContext?.sessionId) {
-      await getSaasDatabase().authSession.update({ where: { id: req.authContext.sessionId }, data: { activeOrganizationId: result.organization.id } });
+      await persistActiveOrganization(getSaasDatabase(), req.authContext.sessionId, result.organization.id);
     }
     return res.json(result);
   } catch (error) { return next(error); }
@@ -72,10 +80,7 @@ router.post('/active', async (req, res, next) => {
     });
     if (!membership) throw new AppError('You are not a member of this workspace.', 403, 'FORBIDDEN');
     if (req.authContext?.sessionId) {
-      await db.authSession.update({
-        where: { id: req.authContext.sessionId },
-        data: { activeOrganizationId: org.id },
-      });
+      await persistActiveOrganization(db, req.authContext.sessionId, org.id);
     }
     return res.json({ ok: true, activeOrganizationId: org.id, organization: org });
   } catch (error) {
