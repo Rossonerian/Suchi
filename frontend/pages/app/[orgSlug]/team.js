@@ -8,6 +8,7 @@ import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
+import { joinCodeAction } from '../../../lib/join-code-ui.mjs';
 
 const clerkEnabled = true;
 
@@ -67,10 +68,11 @@ function TeamContent({ orgSlug }) {
 
 function JoinCodeManager() {
   const [code, setCode] = useState(''); const [joinCode, setJoinCode] = useState(null); const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [copied, setCopied] = useState(false);
-  async function generate(rotate = false) { setBusy(true); setError(''); setCopied(false); try { const result = rotate ? await saasApi.rotateJoinCode() : await saasApi.createJoinCode(); setCode(result.code); setJoinCode(result.joinCode); } catch (err) { setError(err instanceof ApiError ? err.message : 'Unable to create a workspace code.'); } finally { setBusy(false); } }
+  const action = joinCodeAction(Boolean(code));
+  async function generate() { setBusy(true); setError(''); setCopied(false); try { const result = await saasApi.rotateJoinCode(); setCode(result.code); setJoinCode(result.joinCode); } catch (err) { setError(err instanceof ApiError ? err.message : 'Unable to create a workspace code.'); } finally { setBusy(false); } }
   async function copy() { try { await navigator.clipboard.writeText(code); setCopied(true); } catch { setError('Copy failed. Select the code and copy it manually.'); } }
   async function revoke() { if (!joinCode) return; setBusy(true); setError(''); try { await saasApi.revokeJoinCode(joinCode.id); setCode(''); setJoinCode(null); } catch (err) { setError(err instanceof ApiError ? err.message : 'Unable to revoke the workspace code.'); } finally { setBusy(false); } }
-  return <Card><CardHeader><CardTitle>Workspace join code</CardTitle><CardDescription>Generate a code for teammates. Codes are shown only once in this browser session.</CardDescription></CardHeader><CardContent className="grid gap-3"><p className="text-sm text-muted-foreground">Rotating invalidates the previous code. If you did not save it, generate or rotate a new one.</p>{code && <><code className="rounded-md border border-border bg-muted p-3 text-center text-lg tracking-widest">{code}</code><div className="flex flex-wrap gap-2"><Button type="button" variant="outline" onClick={copy} disabled={busy}>{copied ? 'Copied' : 'Copy code'}</Button><Button type="button" variant="outline" onClick={() => generate(true)} disabled={busy}>Rotate code</Button><Button type="button" variant="ghost" onClick={revoke} disabled={busy}>Revoke code</Button></div></>}{!code && <Button type="button" onClick={() => generate(false)} disabled={busy}>{busy ? 'Generating…' : 'Generate join code'}</Button>}{error && <p className="text-sm text-destructive" role="alert">{error}</p>}</CardContent></Card>;
+  return <Card><CardHeader><CardTitle>Workspace join code</CardTitle><CardDescription>Generate a code for teammates. Codes are shown only once in this browser session.</CardDescription></CardHeader><CardContent className="grid gap-3"><p className="text-sm text-muted-foreground">Rotating invalidates the previous code. If you did not save it, generate or rotate a new one.</p>{code && <><code className="rounded-md border border-border bg-muted p-3 text-center text-lg tracking-widest">{code}</code><div className="flex flex-wrap gap-2"><Button type="button" variant="outline" onClick={copy} disabled={busy}> {copied ? 'Copied' : 'Copy code'}</Button><Button type="button" variant="outline" onClick={generate} disabled={busy}>{action.label}</Button><Button type="button" variant="ghost" onClick={revoke} disabled={busy}>Revoke code</Button></div></>}{!code && <Button type="button" onClick={generate} disabled={busy}>{busy ? 'Replacing…' : action.label}</Button>}{error && <p className="text-sm text-destructive" role="alert">{error}</p>}</CardContent></Card>;
 }
 
 export default function TeamPage() {

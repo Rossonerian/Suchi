@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createJoinCode, hashJoinCode, joinOrganizationByCode, normalizeJoinCode } from '../saas/join-codes.js';
+import { createJoinCode, hashJoinCode, joinOrganizationByCode, normalizeJoinCode, rotateJoinCode } from '../saas/join-codes.js';
 
 const context = { userId: 'profile-a', organizationId: 'org-a', organizationRole: 'owner', membershipId: 'membership-a' };
 function dbFor(codeRecord, membership = null) {
@@ -55,6 +55,39 @@ function transactionalConcurrencyDb({ maxUses = 1, revokedAt = null } = {}) {
       });
       queue = run.catch(() => {});
       return run;
+    },
+  };
+  return { database, state };
+}
+
+function replacementDb() {
+  const state = { codes: [{ id: 'code-a', organizationId: 'org-a', codeHash: hashJoinCode('AAAA-BBBB-CC'), revokedAt: null, expiresAt: null, maxUses: null, useCount: 0, organization: { id: 'org-a', slug: 'acme', name: 'Acme' } }], memberships: new Map() };
+  const database = {
+    userProfile: { findUnique: async () => ({ id: 'owner' }) },
+    organizationJoinCode: {
+      findUnique: async ({ where }) => state.codes.find((code) => code.codeHash === where.codeHash) || null,
+    },
+    organizationMembership: {
+      findUnique: async ({ where }) => where.organizationId_userId.userId === 'owner' ? { id: 'owner-membership', organizationId: 'org-a', userId: 'owner', role: 'owner' } : state.memberships.get(where.organizationId_userId.userId) || null,
+    },
+    $transaction: async (callback) => {
+      const codes = state.codes.map((code) => ({ ...code })); const memberships = new Map(state.memberships);
+      const tx = {
+        organizationJoinCode: {
+          findFirst: async ({ where }) => codes.find((code) => code.codeHash === where.codeHash && !code.revokedAt && (!code.expiresAt || code.expiresAt > new Date())) || null,
+          updateMany: async ({ where, data }) => {
+            const matches = codes.filter((code) => (where.organizationId ? code.organizationId === where.organizationId && !code.revokedAt : code.id === where.id && !code.revokedAt));
+            matches.forEach((code) => { if (data.revokedAt !== undefined) code.revokedAt = data.revokedAt; if (data.useCount?.increment) code.useCount += data.useCount.increment; });
+            return { count: matches.length };
+          },
+          create: async ({ data }) => { const code = { id: 'code-b', ...data, revokedAt: null, useCount: 0, organization: { id: 'org-a', slug: 'acme', name: 'Acme' } }; codes.push(code); return code; },
+        },
+        organizationMembership: {
+          findUnique: async ({ where }) => memberships.get(where.organizationId_userId.userId) || null,
+          create: async ({ data }) => { const membership = { id: 'joined-membership', ...data }; memberships.set(data.userId, membership); return membership; },
+        },
+      };
+      const result = await callback(tx); state.codes = codes; state.memberships = memberships; return result;
     },
   };
   return { database, state };
@@ -155,4 +188,14 @@ test('role injection is rejected and join membership creation is fixed to member
   await assert.rejects(() => joinOrganizationByCode(database, { userId: 'user-role' }, { code: 'ABCD-EFGH-JK', role: 'owner' }), { code: 'VALIDATION_ERROR' });
   await joinOrganizationByCode(database, { userId: 'user-role' }, { code: 'ABCD-EFGH-JK' });
   assert.equal(state.memberships.get('user-role').role, 'member');
+});
+
+test('replace after lost client state revokes A before accepting B', async () => {
+  const { database, state } = replacementDb();
+  const replacement = await rotateJoinCode(database, { userId: 'owner', organizationId: 'org-a' });
+  assert.equal(state.codes.find((code) => code.id === 'code-a').revokedAt instanceof Date, true);
+  await assert.rejects(() => joinOrganizationByCode(database, { userId: 'new-user-a' }, { code: 'AAAA-BBBB-CC' }), { code: 'INVALID_JOIN_CODE' });
+  const joined = await joinOrganizationByCode(database, { userId: 'new-user-b' }, { code: replacement.code });
+  assert.equal(joined.membership.role, 'member');
+  assert.equal(state.codes.filter((code) => !code.revokedAt).length, 1);
 });
