@@ -32,6 +32,13 @@ test('requires the active organization to match the route workspace', () => {
   assert.equal(state.membership.id, 'membership-a');
 });
 
+test('does not render a route as ready while the active organization is missing', () => {
+  assert.deepEqual(
+    workspaceContextState({ isLoaded: true, organization: null, memberships, orgSlug: 'acme' }),
+    { ready: false, status: 'Switching to Acme…', membership: memberships[0] },
+  );
+});
+
 test('rejects a route for a workspace the user does not belong to', () => {
   assert.deepEqual(
     workspaceContextState({ isLoaded: true, organization: { id: 'org-a' }, memberships, orgSlug: 'other' }),

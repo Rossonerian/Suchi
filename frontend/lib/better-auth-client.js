@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getApiBaseUrl } from './api-base.mjs';
+import { activateOrganization, resolveActiveOrganization } from './workspace-selection.mjs';
 
 export class BetterAuthError extends Error {
   constructor(message, status = 0, code) {
@@ -120,12 +121,7 @@ export function BetterAuthProvider({ children }) {
   }, []);
 
   const setActive = useCallback(async ({ organization }) => {
-    if (!organization) return;
-    await apiRequest('/v1/organizations/active', {
-      method: 'POST',
-      body: JSON.stringify({ organizationId: organization }),
-    }).catch(() => {});
-    await refresh();
+    await activateOrganization(apiRequest, refresh, organization);
   }, [refresh]);
 
   const value = useMemo(() => ({
@@ -152,10 +148,7 @@ export function useAuth() {
 export function useOrganization() {
   const auth = useAuth();
   const activeId = auth.session?.session?.activeOrganizationId;
-  const organization =
-    (activeId && auth.organizations.find((item) => item.id === activeId || item.slug === activeId)) ||
-    auth.organizations[0] ||
-    null;
+  const organization = resolveActiveOrganization(auth.organizations, activeId);
   return { isLoaded: auth.isLoaded, organization };
 }
 
