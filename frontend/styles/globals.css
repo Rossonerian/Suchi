@@ -48,6 +48,12 @@ h1,h2,h3,p { margin-top:0; } h1 { margin-bottom:0; font-size:clamp(1.25rem,2vw,1
 @media (max-width:680px) { .metrics-strip,.task-create-grid,.task-form-grid { grid-template-columns:1fr; } .data-table { padding:.75rem; } .data-table-controls { align-items:stretch; } .data-table-search { max-width:none; } .data-table-controls>button { width:100%; } .data-table-pagination { align-items:stretch; flex-direction:column; } .data-table-pagination>div { justify-content:space-between; } }
 @media (max-width:680px) { .task-view-controls { justify-content:stretch; } .task-view-controls .button { flex:1; } .kanban-board { grid-template-columns:1fr; } }
 
+.signin-mode-toggle { display:flex; gap:.35rem; margin-bottom:1rem; }
+.signin-mode-toggle button { background:transparent; border:1px solid var(--line); border-radius:6px; color:var(--text-muted); flex:1; min-height:2.75rem; padding:.5rem; }
+.signin-mode-toggle button[aria-selected='true'] { background:var(--muted); color:var(--text); font-weight:600; }
+.onboarding-options { display:grid; gap:1rem; margin-top:1.25rem; }
+.onboarding-option { border:1px solid var(--line); border-radius:var(--radius); padding:1rem; }
+.onboarding-option h3 { margin:0 0 .25rem; }
 /* SaaS workspace shell: one calm, compact frame for every org-scoped page. */
 .workspace-shell { background:var(--bg); color:var(--text); display:flex; min-height:100dvh; }
 .workspace-sidebar { background:var(--panel); border-right:1px solid var(--line); display:flex; flex:0 0 15rem; flex-direction:column; min-height:100dvh; padding:1.25rem .75rem; position:sticky; top:0; z-index:10; }

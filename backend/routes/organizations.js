@@ -6,6 +6,7 @@ import { getSaasDatabase } from '../saas/database.js';
 import { listOrganizations, provisionOrganization } from '../saas/organizations.js';
 import { listOrganizationMembers, inviteOrganizationMember } from '../saas/members.js';
 import { AppError } from '../utils/validation.js';
+import { createJoinCode, joinOrganizationByCode, revokeJoinCode, rotateJoinCode } from '../saas/join-codes.js';
 
 const router = express.Router();
 router.use(requireAuthenticatedUser);
@@ -30,6 +31,31 @@ router.post('/', async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
+});
+
+router.post('/join', async (req, res, next) => {
+  try {
+    const result = await joinOrganizationByCode(getSaasDatabase(), req.userContext, req.body);
+    if (req.authContext?.sessionId) {
+      await getSaasDatabase().authSession.update({ where: { id: req.authContext.sessionId }, data: { activeOrganizationId: result.organization.id } });
+    }
+    return res.json(result);
+  } catch (error) { return next(error); }
+});
+
+router.post('/join-codes', requireOrganization, async (req, res, next) => {
+  try { return res.status(201).json(await createJoinCode(getSaasDatabase(), req.organizationContext, req.body)); }
+  catch (error) { return next(error); }
+});
+
+router.post('/join-codes/rotate', requireOrganization, async (req, res, next) => {
+  try { return res.status(201).json(await rotateJoinCode(getSaasDatabase(), req.organizationContext, req.body)); }
+  catch (error) { return next(error); }
+});
+
+router.delete('/join-codes/:id', requireOrganization, async (req, res, next) => {
+  try { await revokeJoinCode(getSaasDatabase(), req.organizationContext, req.params.id); return res.status(204).end(); }
+  catch (error) { return next(error); }
 });
 
 router.post('/active', async (req, res, next) => {

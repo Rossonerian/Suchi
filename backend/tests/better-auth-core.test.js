@@ -28,8 +28,21 @@ test('Better Auth configuration enforces invariants', () => {
     BETTER_AUTH_TRUSTED_ORIGINS: 'http://localhost:3000, http://127.0.0.1:3000',
   });
   assert.equal(config.baseURL, 'http://localhost:5000');
+  assert.equal(config.googleConfigured, false);
   assert.ok(config.trustedOrigins.includes('http://localhost:3000'));
   assert.ok(config.trustedOrigins.includes('nidar://'));
+  const googleConfig = authConfiguration({
+    BETTER_AUTH_SECRET: 'a'.repeat(32), BETTER_AUTH_URL: 'http://localhost:5000',
+    GOOGLE_CLIENT_ID: 'client-id', GOOGLE_CLIENT_SECRET: 'client-secret',
+  });
+  assert.equal(googleConfig.googleConfigured, true);
+  const googleAuth = createAuth({}, {
+    BETTER_AUTH_SECRET: 'a'.repeat(32), BETTER_AUTH_URL: 'http://localhost:5000',
+    GOOGLE_CLIENT_ID: 'client-id', GOOGLE_CLIENT_SECRET: 'client-secret',
+  });
+  assert.ok(googleAuth.options.socialProviders.google);
+  assert.equal(createAuth({}, { BETTER_AUTH_SECRET: 'a'.repeat(32), BETTER_AUTH_URL: 'http://localhost:5000' }).options.socialProviders, undefined);
+  assert.throws(() => authConfiguration({ BETTER_AUTH_SECRET: 'a'.repeat(32), BETTER_AUTH_URL: 'http://localhost:5000', GOOGLE_CLIENT_ID: 'client-id' }), /configured together/);
 });
 
 test('identity bridge provisions and links application UserProfile idempotently', async () => {

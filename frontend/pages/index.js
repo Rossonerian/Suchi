@@ -1,78 +1,29 @@
-import { useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { ApiError } from '../lib/api';
-import { signInWithEmail, signInWithGoogle } from '../lib/better-auth-client';
 import { ArrowRight, Eye, EyeOff, LogIn } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { getCapabilities, signInWithEmail, signInWithGoogle, signUpWithEmail, useAuth } from '../lib/better-auth-client';
+import { authErrorMessage, validEmail } from '../lib/auth-entry.mjs';
+
 export default function SignIn() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
+  const router = useRouter(); const auth = useAuth();
+  const [mode, setMode] = useState('signin'); const [name, setName] = useState(''); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); const [error, setError] = useState(''); const [loading, setLoading] = useState(false); const [googleAvailable, setGoogleAvailable] = useState(false);
+  useEffect(() => { getCapabilities().then((value) => setGoogleAvailable(value.googleLogin === true)).catch(() => setGoogleAvailable(false)); }, []);
+  useEffect(() => { if (!auth.isLoaded || !auth.isSignedIn || loading) return; if (auth.organizations.length === 1) router.replace(`/app/${auth.organizations[0].slug}`); else router.replace('/onboarding'); }, [auth.isLoaded, auth.isSignedIn, auth.organizations, loading, router]);
   async function handleSubmit(event) {
-    event.preventDefault();
-    if (!email.trim() || !password) return;
-    setError('');
+    event.preventDefault(); setError('');
+    if (!validEmail(email.trim())) return setError('Enter a valid email address.');
+    if (password.length < 8) return setError('Password must be at least 8 characters.');
+    if (mode === 'signup' && !name.trim()) return setError('Enter your name.');
+    if (mode === 'signup' && password !== confirmPassword) return setError('Passwords do not match.');
     setLoading(true);
-    try {
-      await signInWithEmail(email.trim(), password);
-      await router.push('/onboarding');
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 0) {
-        setError('The board is unavailable right now. Check your connection and try again.');
-      } else {
-        setError('Email or password is incorrect. If you were invited, use the link in your invitation.');
-      }
-    } finally {
-      setLoading(false);
-    }
+    try { if (mode === 'signup') await signUpWithEmail(name.trim(), email.trim(), password); else await signInWithEmail(email.trim(), password); await auth.refresh(); await router.push('/onboarding'); }
+    catch (err) { setError(authErrorMessage(err, mode)); } finally { setLoading(false); }
   }
-
-  return (
-    <main className="signin-shell">
-      <section className="signin-stage-copy" aria-labelledby="signin-welcome">
-        <span className="workspace-brand-mark" aria-hidden="true">S</span>
-        <p className="signin-kicker">SUCHI WORKSPACE PLATFORM</p>
-        <h1 id="signin-welcome">Welcome to focused work.</h1>
-        <p className="signin-lede">Bring projects, people, and the next important commitment into one calm workspace.</p>
-        <div className="signin-pill-row" aria-label="Product capabilities">
-          <span className="signin-pill">Projects and tasks</span>
-          <span className="signin-pill">Team context</span>
-          <span className="signin-pill">Meetings in view</span>
-        </div>
-      </section>
-      <Card className="signin-panel border-border bg-card text-card-foreground" aria-labelledby="signin-title">
-        <CardHeader className="px-0 pt-0">
-          <p className="eyebrow"><span aria-hidden="true" />YOUR WORKSPACE AWAITS</p>
-          <CardTitle id="signin-title" className="text-2xl">Sign in to Suchi</CardTitle>
-          <CardDescription className="lede">Continue to your projects, tasks, and team.</CardDescription>
-        </CardHeader>
-        <CardContent className="px-0 pb-0">
-        <div className="stack-form">
-          <Button className="min-h-11" size="lg" type="button" onClick={async () => { setError(''); setLoading(true); try { await signInWithGoogle(); } catch (err) { setError(err instanceof ApiError ? err.message : 'Google sign-in is unavailable.'); } finally { setLoading(false); } }} disabled={loading}>Continue with Google <ArrowRight aria-hidden="true" /></Button>
-          <p className="form-hint">Use your workspace identity to continue.</p>
-        </div>
-          <form className="stack-form" onSubmit={handleSubmit} noValidate>
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" autoCapitalize="none" autoFocus required />
-          <Label htmlFor="password">Password</Label>
-          <div className="password-field">
-            <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
-            <Button type="button" className="password-toggle" variant="ghost" size="icon" onClick={() => setShowPassword((visible) => !visible)} aria-pressed={showPassword} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff /> : <Eye />}</Button>
-          </div>
-          <Button className="mt-2 min-h-11" size="lg" disabled={loading || !email.trim() || !password}>{loading ? 'Signing in…' : <><LogIn />Sign in <ArrowRight aria-hidden="true" /></>}</Button>
-          </form>
-          <p className="form-message" role="alert" aria-live="polite">{error}</p>
-          <p className="form-hint invite-help">Have an invitation? <Link href="/claim-invite">Claim your invite</Link></p>
-        </CardContent>
-      </Card>
-    </main>
-  );
+  async function continueWithGoogle() { setError(''); setLoading(true); try { await signInWithGoogle(); } catch (err) { setError(authErrorMessage(err, mode)); setLoading(false); } }
+  return <main className="signin-shell"><section className="signin-stage-copy" aria-labelledby="signin-welcome"><span className="workspace-brand-mark" aria-hidden="true">S</span><p className="signin-kicker">SUCHI WORKSPACE PLATFORM</p><h1 id="signin-welcome">Welcome to focused work.</h1><p className="signin-lede">Bring projects, people, and the next important commitment into one calm workspace.</p><div className="signin-pill-row" aria-label="Product capabilities"><span className="signin-pill">Projects and tasks</span><span className="signin-pill">Team context</span><span className="signin-pill">Meetings in view</span></div></section><Card className="signin-panel border-border bg-card text-card-foreground" aria-labelledby="signin-title"><CardHeader className="px-0 pt-0"><p className="eyebrow"><span aria-hidden="true" />YOUR WORKSPACE AWAITS</p><CardTitle id="signin-title" className="text-2xl">{mode === 'signin' ? 'Sign in to Suchi' : 'Create your Suchi account'}</CardTitle><CardDescription className="lede">{mode === 'signin' ? 'Continue to your projects, tasks, and team.' : 'Start with an account, then join or create a workspace.'}</CardDescription></CardHeader><CardContent className="px-0 pb-0"><div role="tablist" aria-label="Account access" className="signin-mode-toggle"><button type="button" role="tab" aria-selected={mode === 'signin'} onClick={() => { setMode('signin'); setError(''); }}>Sign in</button><button type="button" role="tab" aria-selected={mode === 'signup'} onClick={() => { setMode('signup'); setError(''); }}>Create account</button></div>{googleAvailable ? <div className="stack-form"><Button className="min-h-11" size="lg" type="button" onClick={continueWithGoogle} disabled={loading}>Continue with Google <ArrowRight aria-hidden="true" /></Button><p className="form-hint">Use your Google identity to continue.</p></div> : <p className="form-hint">Google sign-in is not available right now.</p>}<form className="stack-form" onSubmit={handleSubmit} noValidate>{mode === 'signup' && <><Label htmlFor="name">Name</Label><Input id="name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required /></>}<Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" autoCapitalize="none" autoFocus required /><Label htmlFor="password">Password</Label><div className="password-field"><Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required /><Button type="button" className="password-toggle" variant="ghost" size="icon" onClick={() => setShowPassword((visible) => !visible)} aria-pressed={showPassword} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff /> : <Eye />}</Button></div>{mode === 'signup' && <><Label htmlFor="confirm-password">Confirm password</Label><Input id="confirm-password" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" required /></>}<Button className="mt-2 min-h-11" size="lg" disabled={loading}>{loading ? (mode === 'signup' ? 'Creating…' : 'Signing in…') : <><LogIn />{mode === 'signup' ? 'Create account' : 'Sign in'} <ArrowRight aria-hidden="true" /></>}</Button></form><p className="form-message" role="alert" aria-live="polite">{error}</p></CardContent></Card></main>;
 }

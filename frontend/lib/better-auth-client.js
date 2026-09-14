@@ -67,6 +67,7 @@ function normalizeOrganization(value) {
     name: organization.name || organization.slug || organization.id,
     slug: organization.slug || organization.id,
     logo: organization.logo || null,
+    role: value.role || organization.role || null,
   };
 }
 
@@ -179,4 +180,8 @@ export async function signInWithGoogle() {
   const result = await authRequest('/sign-in/social', { method: 'POST', body: JSON.stringify({ provider: 'google', callbackURL: '/onboarding', disableRedirect: true }) });
   if (typeof window !== 'undefined' && result?.url) window.location.assign(result.url);
   return result;
+}
+
+export async function getCapabilities() {
+  return apiRequest('/capabilities');
 }

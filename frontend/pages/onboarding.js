@@ -1,47 +1,28 @@
 import Link from 'next/link';
-import { useAuth, useOrganizationList } from '../lib/better-auth-client';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { useAuth, useOrganizationList } from '../lib/better-auth-client';
 import { saasApi } from '../lib/api';
 import { Button } from '../components/ui/button';
 
-const clerkEnabled = true;
 function slugify(value) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64); }
+function workspacePath(organization) { return `/app/${organization.slug || organization.id}`; }
 
-function ClerkOnboardingForm() {
-  const router = useRouter(); const { getToken, isLoaded, isSignedIn } = useAuth(); const { userMemberships, isLoaded: membershipsLoaded } = useOrganizationList({ userMemberships: { pageSize: 20 } });
-  const [name, setName] = useState(''); const [slug, setSlug] = useState(''); const [slugEdited, setSlugEdited] = useState(false); const [error, setError] = useState(''); const [saving, setSaving] = useState(false);
-  useEffect(() => { if (isSignedIn && membershipsLoaded && userMemberships?.data?.length === 1 && !router.query.create) { const organization = userMemberships.data[0].organization; router.replace(`/app/${organization.slug || organization.id}`); } }, [isSignedIn, membershipsLoaded, userMemberships?.data, router]);
-  if (!isLoaded || (isSignedIn && !membershipsLoaded)) return <p className="muted" role="status">Checking your workspaces…</p>;
-  if (!isSignedIn) return <p className="muted">Sign in first, then return here to create a workspace.</p>;
-  if (userMemberships?.data?.length > 1 && !router.query.create) return <div className="grid gap-4"><div><h2 className="text-lg font-semibold">Choose a workspace</h2><p className="muted mt-1">Select where you want to work, or create another workspace.</p></div><div className="grid gap-2">{userMemberships.data.map((membership) => <Button key={membership.organization.id} asChild variant="outline" className="h-auto justify-start p-3"><Link href={`/app/${membership.organization.slug || membership.organization.id}`}><span><strong className="block">{membership.organization.name}</strong><span className="text-xs text-muted-foreground">Open workspace</span></span></Link></Button>)}</div><Button asChild><Link href="/onboarding?create=1">Create another workspace</Link></Button></div>;
-  async function submit(event) { event.preventDefault(); setSaving(true); setError(''); try { const token = await getToken(); const result = await saasApi.createOrganization({ name: name.trim(), slug: slug || slugify(name) }, token); await router.push(`/app/${result.organization.slug}`); } catch (err) { setError(err.message || 'Unable to create the workspace.'); } finally { setSaving(false); } }
-  return <><form className="grid gap-4" onSubmit={submit}><div className="grid gap-2"><label htmlFor="organization-name">Workspace name</label><input id="organization-name" value={name} onChange={(event) => { setName(event.target.value); if (!slugEdited) setSlug(slugify(event.target.value)); }} placeholder="Acme" required maxLength={120} /></div><div className="grid gap-2"><label htmlFor="organization-slug">Workspace URL <span className="text-muted-foreground">(optional)</span></label><input id="organization-slug" value={slug} onChange={(event) => { setSlugEdited(true); setSlug(event.target.value.toLowerCase()); }} placeholder={slugify(name) || 'acme'} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxLength={64} /><p className="text-xs text-muted-foreground">You can use the suggested URL and change it later.</p></div><Button type="submit" disabled={saving || !name.trim()}>{saving ? 'Creating…' : 'Create workspace'}</Button>{error && <p className="text-sm text-destructive" role="alert">{error}</p>}</form><p className="mt-4 text-sm text-muted-foreground">Already belong to another workspace? <Link className="text-primary underline-offset-4 hover:underline" href={userMemberships?.data?.[0] ? `/app/${userMemberships.data[0].organization.slug || userMemberships.data[0].organization.id}` : '/'}>Open your workspace</Link>.</p></>;
+function WorkspaceForms({ auth, onJoined }) {
+  const [joinCode, setJoinCode] = useState(''); const [name, setName] = useState(''); const [slug, setSlug] = useState(''); const [slugEdited, setSlugEdited] = useState(false); const [error, setError] = useState(''); const [saving, setSaving] = useState(false);
+  async function join(event) { event.preventDefault(); setError(''); setSaving(true); try { const result = await saasApi.joinOrganizationByCode(joinCode); await auth.refresh(); await auth.setActive({ organization: result.organization.id }); await onJoined(result.organization); } catch (err) { setError(err.code === 'INVALID_JOIN_CODE' ? 'That workspace code is invalid or expired.' : err.message || 'Unable to join the workspace.'); } finally { setSaving(false); } }
+  async function create(event) { event.preventDefault(); setError(''); setSaving(true); try { const result = await saasApi.createOrganization({ name: name.trim(), slug: slug || slugify(name) }); await auth.refresh(); await auth.setActive({ organization: result.organization.id }); await onJoined(result.organization); } catch (err) { setError(err.message || 'Unable to create the workspace.'); } finally { setSaving(false); } }
+  return <div className="onboarding-options"><section className="onboarding-option"><h3>Join a workspace</h3><p className="muted">Use the code shared by a workspace owner or admin.</p><form className="stack-form" onSubmit={join}><label htmlFor="workspace-code">Workspace code</label><input id="workspace-code" value={joinCode} onChange={(event) => setJoinCode(event.target.value.toUpperCase())} placeholder="K7M4-Q9W2-PX" autoCapitalize="characters" maxLength={16} required /><Button type="submit" disabled={saving || joinCode.replace(/[\s-]/g, '').length < 8}>{saving ? 'Joining…' : 'Join workspace'}</Button></form></section><section className="onboarding-option"><h3>Create a workspace</h3><p className="muted">Create the space for your team. Billing can be added server-side later.</p><form className="stack-form" onSubmit={create}><label htmlFor="organization-name">Workspace name</label><input id="organization-name" value={name} onChange={(event) => { setName(event.target.value); if (!slugEdited) setSlug(slugify(event.target.value)); }} placeholder="Acme" required maxLength={120} /><label htmlFor="organization-slug">Workspace URL / slug</label><input id="organization-slug" value={slug} onChange={(event) => { setSlugEdited(true); setSlug(event.target.value.toLowerCase()); }} placeholder={slugify(name) || 'acme'} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxLength={64} required /><Button type="submit" disabled={saving || !name.trim() || !slug}>{saving ? 'Creating…' : 'Create workspace'}</Button></form></section>{error && <p className="form-message" role="alert">{error}</p>}</div>;
 }
 
 export default function Onboarding() {
-  return <main className="onboarding-shell">
-    <section className="onboarding-card" aria-labelledby="onboarding-title">
-      <aside className="onboarding-rail">
-        <span className="workspace-brand-mark" aria-hidden="true">S</span>
-        <p className="signin-kicker">SUCHI WORKSPACE PLATFORM</p>
-        <h1>Set up your workspace.</h1>
-        <p>A few small steps will make your first project useful from the moment you arrive.</p>
-        <div className="onboarding-steps" aria-label="Workspace setup progress">
-          <span className="onboarding-step is-current">Create workspace</span>
-          <span className="onboarding-step">Invite your team</span>
-          <span className="onboarding-step">Connect tools</span>
-          <span className="onboarding-step">Start working</span>
-        </div>
-      </aside>
-      <div className="onboarding-content">
-        <p className="eyebrow"><span aria-hidden="true" />STEP 1 OF 4 · AUTOSAVED</p>
-        <h2 id="onboarding-title">Create your workspace</h2>
-        <p className="muted">Start with a name. You can invite teammates and connect tools when you are ready.</p>
-        {clerkEnabled ? <ClerkOnboardingForm /> : <><p className="muted">Workspace setup is unavailable in this environment.</p><Button asChild className="mt-4 min-h-11"><Link href="/dashboard">Continue to the board</Link></Button></>}
-      </div>
-    </section>
-  </main>;
+  const router = useRouter(); const auth = useAuth(); const { userMemberships } = useOrganizationList(); const memberships = userMemberships.data;
+  useEffect(() => { if (auth.isLoaded && !auth.isSignedIn) router.replace('/'); }, [auth.isLoaded, auth.isSignedIn, router]);
+  useEffect(() => { if (auth.isLoaded && auth.isSignedIn && memberships.length === 1 && !router.query.create) router.replace(workspacePath(memberships[0].organization)); }, [auth.isLoaded, auth.isSignedIn, memberships, router]);
+  if (!auth.isLoaded) return <main className="onboarding-shell"><p className="muted" role="status">Checking your workspaces…</p></main>;
+  if (!auth.isSignedIn) return null;
+  async function openWorkspace(organization) { await auth.setActive({ organization: organization.id }); await router.push(workspacePath(organization)); }
+  return <main className="onboarding-shell"><section className="onboarding-card" aria-labelledby="onboarding-title"><aside className="onboarding-rail"><span className="workspace-brand-mark" aria-hidden="true">S</span><p className="signin-kicker">SUCHI WORKSPACE PLATFORM</p><h1>Choose your workspace.</h1><p>Join a team with a code or create a new workspace to get started.</p></aside><div className="onboarding-content"><p className="eyebrow"><span aria-hidden="true" />WORKSPACE SETUP</p>{memberships.length > 1 && !router.query.create ? <><h2 id="onboarding-title">Open a workspace</h2><p className="muted">Choose where you want to work, or create another workspace.</p><div className="grid gap-2">{memberships.map(({ organization }) => <Button key={organization.id} type="button" variant="outline" className="h-auto justify-start p-3" onClick={() => openWorkspace(organization)}><span><strong className="block">{organization.name}</strong><span className="text-xs text-muted-foreground">Open workspace</span></span></Button>)}</div><Button asChild className="mt-4"><Link href="/onboarding?create=1">Join or create another workspace</Link></Button></> : <><h2 id="onboarding-title">Join or create a workspace</h2><p className="muted">Your account is ready. Choose how you want to begin.</p><WorkspaceForms auth={auth} onJoined={(organization) => router.push(workspacePath(organization))} />{memberships.length > 0 && <p className="mt-4 text-sm text-muted-foreground"><Link href={workspacePath(memberships[0].organization)}>Open your existing workspace</Link></p>}</>}</div></section></main>;
 }
 
-export { slugify };
+export { slugify, workspacePath };
