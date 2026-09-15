@@ -35,6 +35,7 @@ ENV PORT=5000
 
 # Copy packages and installed backend dependencies
 COPY --from=builder /app/packages /app/packages
+COPY --from=builder /app/node_modules /app/node_modules
 COPY --from=builder /app/backend/node_modules /app/backend/node_modules
 COPY backend /app/backend
 COPY package.json /app/
@@ -48,4 +49,4 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:5000/api/health || exit 1
 
 WORKDIR /app/backend
-CMD ["node", "saas/server.js"]
+CMD ["sh", "-c", "npm --prefix /app/packages/database run migrate:deploy && node /app/backend/saas/server.js"]
